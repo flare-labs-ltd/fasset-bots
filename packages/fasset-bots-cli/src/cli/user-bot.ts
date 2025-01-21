@@ -209,23 +209,13 @@ program
     });
 
 program
-    .command("balance")
-    .description("Get user balances for relevant tokens")
+    .command("balances")
+    .alias("balance")
+    .description("Print user balances for relevant tokens")
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const bot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
-        const fasset = await TokenBalances.fasset(bot.context);
-        console.log("FAsset: ", await fasset.formatBalance(bot.nativeAddress));
-        const underlying = await TokenBalances.fassetUnderlyingToken(bot.context);
-        console.log(`Underlying (${bot.context.chainInfo.name}): `, await underlying.formatBalance(bot.underlyingAddress));
-        const native = await TokenBalances.evmNative(bot.context);
-        console.log(`Native (${bot.context.nativeChainInfo.chainName}): `, await native.formatBalance(bot.nativeAddress));
-        for (const collateral of await bot.context.assetManager.getCollateralTypes()) {
-            if (!toBN(collateral.validUntil).eqn(0)) continue;
-            const reader = await TokenBalances.collateralType(collateral);
-            const name = await reader.token.name().catch(() => "ERC20");
-            console.log(`${name}: `, await reader.formatBalance(bot.nativeAddress));
-        }
+        await bot.infoBot().printBalances(bot.nativeAddress, bot.underlyingAddress);
     });
 
 program

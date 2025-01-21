@@ -459,6 +459,24 @@ export class InfoBotCommands {
         }
     }
 
+    async printBalances(nativeAddress: string, underlyingAddress?: string) {
+        const fasset = await TokenBalances.fasset(this.context);
+        console.log("FAsset: ", await fasset.formatBalance(nativeAddress));
+        if (underlyingAddress) {
+            assertCmd(isAssetAgentContext(this.context), "Cannot print underlying balance for this setup");
+            const underlying = await TokenBalances.fassetUnderlyingToken(this.context);
+            console.log(`Underlying (${this.context.chainInfo.name}): `, await underlying.formatBalance(underlyingAddress));
+        }
+        const native = await TokenBalances.evmNative(this.context);
+        console.log(`Native (${this.context.nativeChainInfo.chainName}): `, await native.formatBalance(nativeAddress));
+        for (const collateral of await this.context.assetManager.getCollateralTypes()) {
+            if (!toBN(collateral.validUntil).eqn(0)) continue;
+            const reader = await TokenBalances.collateralType(collateral);
+            const name = await reader.token.name().catch(() => "ERC20");
+            console.log(`${name}: `, await reader.formatBalance(nativeAddress));
+        }
+    }
+
     /* istanbul ignore next */
     async* readAssetManagerLogs(blockCount: number) {
         const eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager });

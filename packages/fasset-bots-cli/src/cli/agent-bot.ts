@@ -485,6 +485,27 @@ program
         console.log(`Agent ${agentVault} minted ${numberOfLots} lots from free underlying.`);
     });
 
+program
+    .command("balances")
+    .alias("balance")
+    .description("Print owner balances for relevant tokens")
+    .option("-w, --work", "Print only balances for work account")
+    .option("-m, --management", "Print only balances for management account")
+    .action(async (cmdOptions: { management: boolean, work: boolean }) => {
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const bot = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const both = !cmdOptions.work && !cmdOptions.management;
+        if (cmdOptions.work || both) {
+            console.log(chalk.yellowBright("WORK ACCOUNT:"));
+            await bot.infoBot().printBalances(bot.owner.workAddress, bot.ownerUnderlyingAddress);
+        }
+        if (cmdOptions.management || both) {
+            console.log(chalk.yellowBright("MANAGEMENT ACCOUNT:"));
+            await bot.infoBot().printBalances(bot.owner.managementAddress);
+        }
+    });
+
 toplevelRun(async () => {
     try {
         await program.parseAsync();
