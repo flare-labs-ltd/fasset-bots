@@ -506,4 +506,11 @@ export class AgentController {
     ): Promise<ApiResponseWrapper<UnderlyingAddress[]>> {
         return handleApiResponse(this.agentService.getUnderlyingAddresses());
     }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("ownerUnderlyingBalance/:fAssetSymbol")
+        public async ownerUnderlyingBalance(@Param("fAssetSymbol") fAssetSymbol: string): Promise<ApiResponseWrapper<AllBalances>> {
+            return handleApiResponse(this.agentService.getOwnerUnderlyingBalance(fAssetSymbol));
+        }
 }

@@ -178,7 +178,8 @@ export class AgentService {
 
     async withdrawUnderlying(fAssetSymbol: string, agentVaultAddress: string, amount: string, destinationAddress: string,): Promise<AgentUnderlying> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        const transactionDatabaseId = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        const transactionDatabaseId = await cli.withdrawUnderlying(agentVaultAddress, currency.parse(amount), destinationAddress);
         return {
             transactionDatabaseId: transactionDatabaseId ?? null,
         };
@@ -806,5 +807,34 @@ export class AgentService {
         const agentInfo = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const agentFreeUnderlyingBalance = formatFixed(toBN(agentInfo.freeUnderlyingBalanceUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
         return {assetSymbol: cli.context.chainInfo.symbol, lotSize: lotSizeAsset, freeUnderlyingBalance:  agentFreeUnderlyingBalance, freeLots: agentInfo.freeCollateralLots};
+    }
+
+    async getSafeFreeUnderlyingBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AllBalances> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        const balance = await cli.getSafeToWithdrawUnderlying(agentVaultAddress);
+        const agentFreeUnderlyingBalance = formatFixed(toBN(balance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        return {
+            balance: agentFreeUnderlyingBalance,
+            symbol: cli.context.chainInfo.symbol
+        };
+    }
+
+    async underlyingTopUp(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        const amountUBA = currency.parse(amount);
+        await cli.underlyingTopUp(agentVaultAddress, amountUBA);
+    }
+
+    async getOwnerUnderlyingBalance(fAssetSymbol: string): Promise<AllBalances> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        // amount to mint
+        const underlyingAddress = this.secrets.optional(`owner.${cli.context.chainInfo.symbol}.address`);
+        let balanceFormatted = "0";
+        if (underlyingAddress) {
+            const underlyingBalance = await cli.context.wallet.getBalance(underlyingAddress);
+            balanceFormatted = formatFixed(toBN(underlyingBalance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        }
+        return {balance: balanceFormatted, symbol: cli.context.chainInfo.symbol};
     }
 }

@@ -3,7 +3,7 @@ import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } fr
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance, AgentUnderlying } from "../../common/AgentResponse";
+import { AgentBalance, AgentUnderlying, AllBalances } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
@@ -45,8 +45,26 @@ export class UnderlyingController {
         return handleApiResponse(this.agentService.getFreeUnderlying(fAssetSymbol, agentVaultAddress));
     }
 
+    @Get("safeFreeUnderlyingBalance/:fAssetSymbol/:agentVaultAddress")
+    public async getSafeFreeUnderlyingBalance(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<AllBalances>> {
+        return handleApiResponse(this.agentService.getSafeFreeUnderlyingBalance(fAssetSymbol, agentVaultAddress));
+    }
+
     @Get("create/:fAssetSymbol")
     public async createUnderlying(@Param("fAssetSymbol") fAssetSymbol: string): Promise<ApiResponseWrapper<AgentUnderlying>> {
         return handleApiResponse(this.agentService.createUnderlying(fAssetSymbol));
+    }
+
+    @Post("underlyingTopUp/:fAssetSymbol/:agentVaultAddress/:amount")
+    @HttpCode(200)
+    public async underlyingTopUp(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.underlyingTopUp(fAssetSymbol, agentVaultAddress, amount));
     }
 }
