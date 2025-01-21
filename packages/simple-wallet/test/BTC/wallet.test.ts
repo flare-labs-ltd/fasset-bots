@@ -382,11 +382,11 @@ describe("Bitcoin wallet tests", () => {
         const address1Included1 = await walletAddressesIncludedInInputs(wClient, fundedAddress, replacementTxEnt.raw!)
         const address2Included1 = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
         expect(address1Included1).to.be.true;
-        expect(address2Included1).to.be.true;
+        expect(address2Included1).to.be.false;
         const address1IncludedOut1 = await walletAddressesIncludedInOutputs(wClient, fundedAddress, replacementTxEnt.raw!)
         const address2IncludedOut1 = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
         expect(address1IncludedOut1).to.be.true;
-        expect(address2IncludedOut1).to.be.true;
+        expect(address2IncludedOut1).to.be.false;
 
         await dbutils.updateTransactionEntity(wClient.rootEm, fundTxId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;

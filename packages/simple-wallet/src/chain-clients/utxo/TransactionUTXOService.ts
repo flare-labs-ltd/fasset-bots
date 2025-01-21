@@ -153,15 +153,13 @@ export class TransactionUTXOService {
         /* istanbul ignore else */
         if (feeStatus == FeeStatus.HIGH) {
             res = await this.collectUTXOs(utxos, validRbfUTXOs, txData);
-            if (res) {
-                res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
-            }
+            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
         } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
             // check if we can build tx with utxos with utxo.value < amountToSend
             const smallUTXOs = utxos.filter((utxo) => utxo.value.lte(txData.amount));
             if (isEnoughUTXOs(smallUTXOs, txData.amount, txData.fee)) {
                 res = await this.collectUTXOs(smallUTXOs, validRbfUTXOs, txData, true);
-                if (res && feeStatus == FeeStatus.MEDIUM) {
+                if (feeStatus == FeeStatus.MEDIUM) {
                     res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
                 }
                 if (res && txData.maxFee) {
@@ -192,19 +190,19 @@ export class TransactionUTXOService {
             for (let i = 0; i < maximumNumberOfUTXOs - res.length && i < minimalUTXOs.length; i++) {
                 res.push(minimalUTXOs[i]);
             }
-        }
+        } // TODO -> check maxFee constraints. Do not use "too much".
 
         return res;
     }
 
-    private async collectUTXOs(utxos: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData, useUTXOsLessThanAmount?: boolean) {
+    private async collectUTXOs(utxos: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData, usingUTXOLessThanAmount?: boolean) {
         const baseUTXOs: MempoolUTXO[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
         const rbfUTXOsValueLeft = rbfUTXOs.length > 0 ? await this.calculateChangeValue(txData, baseUTXOs) : new BN(0);
         if (rbfUTXOsValueLeft.gte(this.minimumUTXOValue)) {
             return baseUTXOs;
         }
         // If there is an UTXO that covers amount use it, otherwise default to selection algorithm
-        const res = useUTXOsLessThanAmount === true ? null : await this.collectUTXOsMinimal(utxos, rbfUTXOs, txData);
+        const res = usingUTXOLessThanAmount === true ? null : await this.collectUTXOsMinimal(utxos, rbfUTXOs, txData);
         if (res) {
             return res;
         } else {
@@ -286,7 +284,10 @@ export class TransactionUTXOService {
         return null;
     }
 
-    private async removeExcessUTXOs(utxos: MempoolUTXO[], rbfUTXOsLength: number, txData: TransactionData, feeStatus: FeeStatus) {
+    private async removeExcessUTXOs(utxos: MempoolUTXO[] | null, rbfUTXOsLength: number, txData: TransactionData, feeStatus: FeeStatus) {
+        if (utxos === null) {
+            return null;
+        }
         const baseUTXOs: MempoolUTXO[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= 0 output
         const additionalUTXOs: MempoolUTXO[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= minimalUTXOSize output
 

@@ -97,8 +97,9 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
-        await expect(wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT.subn(1))).to
-            .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
+        const toSend = DOGE_DUST_AMOUNT.subn(1);
+        await expect(wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, toSend)).to
+            .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${toSend.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
 
     it("Should get account balance", async () => {
@@ -295,7 +296,7 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Free underlying with specified fee and  txAmount - txFee = is dust amount", async () => {
-        const feeInSatoshi = amountToSend.sub(getDustAmount(wClient.chainType));
+        const feeInSatoshi = amountToSend.sub(getDustAmount(wClient.chainType).subn(1));
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend, feeInSatoshi, undefined, undefined, undefined, undefined, true);
         expect(txId).greaterThan(0);
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);

@@ -241,18 +241,29 @@ export function getMinimumUTXOValue(chainType: ChainType) {
         case ChainType.testBTC:
             return toBN(10_000);
         case ChainType.DOGE:
-            return toBN(1_000_000);
+            return toBNExp(1, BTC_DOGE_DEC_PLACES);
         case ChainType.testDOGE:
-            return toBN(1_000_000);
+            return toBNExp(1, BTC_DOGE_DEC_PLACES);
         default:
             throw new Error(`Unsupported chain type ${chainType}`);
     }
 }
 
-export function calculateFeePerKBFromTransactionEntity(transaction?: TransactionEntity) : BN {
-    if (transaction && transaction.fee && transaction.size) {
-        return transaction.fee.muln(1000).divn(transaction.size);
+export function calculateFeePerKBFromTransactionEntity(rbfTxId: number, txForReplacement?: TransactionEntity) : BN {
+    if (txForReplacement && txForReplacement.fee && txForReplacement.size) {
+        return txForReplacement.fee.muln(1000).divn(txForReplacement.size);
+    } else if (txForReplacement) {
+        logger.warn(`RBF transaction ${rbfTxId} cannot determine original feePerKb. Missing fee and size.`)
+        return toBN(0);
     } else {
         return toBN(0);
+    }
+}
+
+export function getMinimalAllowedFeePerKB(chainType: ChainType): BN {
+    if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
+        return DOGE_MIN_ALLOWED_FEE_PER_KB;
+    } else {
+        return BTC_MIN_ALLOWED_FEE_PER_KB;
     }
 }
