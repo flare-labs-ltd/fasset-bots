@@ -29,78 +29,79 @@ export interface MempoolUTXO {
     confirmed: boolean,
     script: string,
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface AccountBalanceResponse {
     balance: number,
     unconfirmedBalance: number;
     unconfirmedTxs: number;
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOResponse {
     txid: string;
     vout: number;
     value: string;
     confirmations: number;
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOAddressResponse {
     address: string;
     balance: string;
     unconfirmedBalance: string;
     unconfirmedTxs: string;
-    txids: string[];
-    totalPages: number;
-    page: number;
+    txids?: string[];
+    totalPages?: number;
+    page?: number;
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOBlockHeightResponse {
     blockbook: {
         bestHeight: number;
     }
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface FeeStatsResponse {
     averageFeePerKb: number;
     decilesFeePerKb: number[];
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOBlockResponse {
     height: number;
     confirmations: number;
-    time: number;
+    time?: number;
     hash: string;
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOTransactionResponse {
     txid: string;
-    version: number
+    version?: number
     vin: UTXOVinResponse[];
     vout: UTXOVoutResponse[];
-    blockHash: string;
+    blockHash?: string;
     blockHeight: number;
     confirmations: number;
     blockTime: number;
-    size: number;
-    vsize: number;
+    size?: number;
+    vsize?: number;
     value: string;
-    valueIn: string;
-    fees: string;
-    hex: string;
+    valueIn?: string;
+    fees?: string;
+    hex?: string;
 }
-
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOVinResponse {
-    txid: string;
-    sequence: number;
-    vout: number;
-    value: string;
-    addresses: string[];
+    txid?: string;
+    sequence?: number;
+    vout?: number;
+    value?: string;
+    addresses?: string[];
 }
+//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOVoutResponse {
-    value: string;
+    value?: string;
     n: number;
-    hex: string;
+    hex?: string;
     addresses: string[];
-    spent: boolean;
+    spent?: boolean;
 }
 
 export interface UTXORawTransaction {

@@ -312,7 +312,7 @@ describe("Dogecoin wallet tests", () => {
         const txEnt = await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED, TransactionStatus.TX_REPLACED_PENDING], txId);
         const replacementTxEnt = await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txEnt.replaced_by!.id);
         const transaction = await wClient.blockchainAPI.getTransaction(replacementTxEnt.transactionHash!);
-        const fee = toBN(transaction.fees);
+        const fee = toBN(transaction.fees!);
         let val = 0;
         for (const txOut of transaction.vout) {
             if (!txOut.addresses.includes(fundedAddress)) {
@@ -413,8 +413,8 @@ describe("Dogecoin wallet tests", () => {
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
 
         const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
-        const transactionValue = toBN(transaction.vout[0].value);
-        const transactionFee = toBN(transaction.fees);
+        const transactionValue = toBN(transaction.vout[0].value!);
+        const transactionFee = toBN(transaction.fees!);
         expect(transactionValue.add(transactionFee).eq(amountToSendSatoshi)).to.be.true;
 
         await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
@@ -429,7 +429,7 @@ describe("Dogecoin wallet tests", () => {
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
 
         const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
-        expect(toBN(transaction.fees).eq(feeInSatoshi)).to.be.true;
+        expect(toBN(transaction.fees!).eq(feeInSatoshi)).to.be.true;
 
         await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
@@ -444,7 +444,7 @@ describe("Dogecoin wallet tests", () => {
         expect(txId).greaterThan(0);
         const txEnt = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
-        expect(toBN(transaction.fees).eq(maxFee)).to.be.true;
+        expect(toBN(transaction.fees!).eq(maxFee)).to.be.true;
         await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
         });
@@ -482,7 +482,7 @@ describe("Dogecoin wallet tests", () => {
         expect(address2IncludedOut).to.be.true;
 
         const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
-        expect(toBN(transaction.fees).eq(maxFeeForFeeSource)).to.be.true;
+        expect(toBN(transaction.fees!).eq(maxFeeForFeeSource)).to.be.true;
 
         await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;

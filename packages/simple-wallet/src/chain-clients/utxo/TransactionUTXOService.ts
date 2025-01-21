@@ -396,12 +396,17 @@ export class TransactionUTXOService {
                         source: tr.vin[0]?.addresses?.[0] ?? UNKNOWN_SOURCE,
                         destination: UNKNOWN_DESTINATION,
                         transactionHash: txHash,
-                        fee: toBN(tr.fees),
+                        fee: toBN(tr.fees ?? 0),
                         status: tr.blockHash && tr.confirmations >= this.enoughConfirmations ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_SUBMITTED,
                         numberOfOutputs: tr.vout.length ?? 0
                     } as RequiredEntityData<TransactionEntity>);
 
-                    const inputs = tr.vin.map((t: UTXOVinResponse) => createTransactionInputEntity(em, txEnt, t.txid, t.value, t.vout ?? 0, ""));
+                    const inputs: TransactionInputEntity[] = [];
+                    for (const t of tr.vin) {
+                        if (t.txid && t.value && t.vout) {
+                            inputs.push(createTransactionInputEntity(em, txEnt, t.txid, t.value, t.vout, ""));
+                        }
+                    }
                     txEnt.inputs.add(inputs);
 
                     em.persist(txEnt);
