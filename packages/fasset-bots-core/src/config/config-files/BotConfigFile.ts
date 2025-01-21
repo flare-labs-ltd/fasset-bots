@@ -60,7 +60,7 @@ export interface BotNativeChainInfo {
 
 export interface ApiNotifierConfig {
     apiUrl: string;
-    apiKey: string;
+    apiKey?: string;
     level?: NotificationLevel;
 }
 
