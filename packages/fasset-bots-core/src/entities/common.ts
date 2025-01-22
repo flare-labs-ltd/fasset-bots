@@ -39,6 +39,7 @@ export enum AgentRedemptionFinalState {
     EXPIRED_PAID = "expired_paid",
     EXPIRED_UNPAID = "expired_unpaid",
     HANDSHAKE_REJECTED = "handshake_rejected",
+    EXTERNALLY_CONFIRMED = "externally_confirmed",
 }
 
 export enum AgentUnderlyingPaymentState {
