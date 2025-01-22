@@ -2,8 +2,6 @@ import { loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { programVersion, resolveInFassetBotsCore, stripIndent } from "@flarelabs/fasset-bots-core/utils";
 import { Command } from "commander";
 import fs from "fs";
-import os from "os";
-import path from "path";
 
 type UserTypeForOptions = "agent" | "user" | "bot" | "util";
 
@@ -21,25 +19,19 @@ export function programWithCommonOptions(userType: UserTypeForOptions, fassets: 
     }
 
     function createConfigOption() {
-        const defaultPath = expandConfigPath("coston", userType);
         return program
-            .createOption("-c, --config <configFile>",
+            .createOption("-c, --config <configFileOrBuiltinConfigName>",
                 "config file path; you can also provide network name (e.g. 'coston'), in which case the appropriate config embedded in the program is used")
             .env(configEnvVar)
             .argParser((v) => expandConfigPath(v, userType))
-            .default(defaultPath, `"${path.basename(defaultPath)}" (embedded in the program)`);
+            .makeOptionMandatory();
     }
 
     function createSecretsOption() {
-        const allowDefaultSecrets = userType === "user";
-        const secretsOption = program
+        return program
             .createOption("-s, --secrets <secretsFile>", "file containing the secrets - private keys / adresses, api keys, etc.")
-            .env(secretsEnvVar);
-        if (allowDefaultSecrets) {
-            return secretsOption.default(defaultSecretsPath());
-        } else {
-            return secretsOption.makeOptionMandatory();
-        }
+            .env(secretsEnvVar)
+            .makeOptionMandatory();
     }
 
     function createFAssetOption(mandatory: boolean = true) {
@@ -100,10 +92,6 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
         return resolveInFassetBotsCore(`run-config/${config}.json`);
     }
     return config;
-}
-
-function defaultSecretsPath() {
-    return path.resolve(os.homedir(), "fasset/secrets.json");
 }
 
 export function getOneDefaultToAll<T>(map: Map<string,T>, val?: string): T[] {
