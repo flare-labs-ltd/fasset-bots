@@ -57,7 +57,7 @@ describe("Secrets unit tests", () => {
     });
 
     it("Should load secrets", async () => {
-        const secrets2 = await Secrets.load(requireEnv("FASSET_BOT_SECRETS"));
+        const secrets2 = await Secrets.load("./test-hardhat/test-utils/test-secrets/test-secrets.json");
         expect(secrets2.data.apiKey).to.not.be.empty;
     });
 });
