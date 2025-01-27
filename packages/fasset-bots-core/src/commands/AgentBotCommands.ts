@@ -470,9 +470,11 @@ export class AgentBotCommands {
         }
         // announce and perform payment
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
+        await this.notifierFor(agentVault).sendUnderlyingWithdrawalAnnounced(amount.toString());
         const latestBlock = await latestBlockTimestampBN();
         const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference, undefined, { isFreeUnderlying: true });
         await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID, undefined, latestBlock);
+        await this.notifierFor(agentVault).sendUnderlyingWithdrawalCreated(amount.toString());
         logger.info(`Agent ${agentVault} initiated transaction with database id ${txDbId}.`)
         console.log(`Agent ${agentVault} initiated transaction with database id ${txDbId}. Please ensure 'run-agent' is running for the transaction to be processed further.`)
         return txDbId;

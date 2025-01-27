@@ -70,6 +70,7 @@ export class AgentBotUnderlyingManagement {
      */
     async underlyingTopUp(em: EM, amount: BN): Promise<boolean> {
         const amountF = await this.tokens.underlying.format(amount);
+        await this.notifier.sendStartUnderlyingTopup(amountF);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
         const canTopUp = await this.checkForLowOwnerUnderlyingBalance();
@@ -91,6 +92,7 @@ export class AgentBotUnderlyingManagement {
             return await this.agent.initiateTopupPayment(amount, this.ownerUnderlyingAddress);
         });
         await this.createAgentUnderlyingPayment(em, txDbId, AgentUnderlyingPaymentType.TOP_UP, AgentUnderlyingPaymentState.PAID);
+        await this.notifier.sendUnderlyingTopupPaymentCreated(amountF);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner initiated underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
             to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with transactions database id  ${txDbId}.`);
         await this.checkForLowOwnerUnderlyingBalance();
