@@ -387,6 +387,7 @@ export class AgentBotMinting {
     async executeSelfMinting(proof: Payment.Proof, lots: BN) {
         try {
             await this.context.assetManager.selfMint(web3DeepNormalize(proof), this.agent.vaultAddress, lots, { from: this.agent.owner.workAddress });
+            await this.notifier.sendSelfMintExecuted(lots.toString());
         } catch (error) {
             if (errorIncluded(error, ["self-mint payment too small"])) {
                 const lotSizeUBA = await this.context.assetManager.lotSize();

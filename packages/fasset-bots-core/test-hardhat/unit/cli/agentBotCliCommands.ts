@@ -58,7 +58,7 @@ describe("AgentBot cli commands unit tests", () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        secrets = await Secrets.load(TEST_SECRETS);
+        secrets = await new Secrets(TEST_SECRETS, { apiKey: {} });
         // accounts
         governance = accounts[0];
         ownerAddress = accounts[3];

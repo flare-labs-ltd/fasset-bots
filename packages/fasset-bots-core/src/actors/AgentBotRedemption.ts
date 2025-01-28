@@ -263,15 +263,25 @@ export class AgentBotRedemption {
 
     async handleExpiredRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>, proof: ConfirmedBlockHeightExists.Proof) {
         logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${redemption.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-        await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
-            await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
-        });
+        let finalState: AgentRedemptionFinalState | undefined;
+        try {
+            await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
+                await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
+            });
+        } catch (error) {
+            if (errorIncluded(error, ["invalid request id"])) {
+                logger.warn(`Redemption ${redemption.requestId} doesn't exist any more, probably it has been confirmed by a 3rd party.`)
+                finalState = AgentRedemptionFinalState.EXTERNALLY_CONFIRMED;
+            } else {
+                throw error;
+            }
+        }
         redemption = await this.updateRedemption(rootEm, redemption, {
             state: AgentRedemptionState.DONE,
-            finalState: this.getFinalState(redemption),
+            finalState: finalState ?? this.getFinalState(redemption),
         });
         await this.notifier.sendRedemptionExpiredInIndexer(redemption.requestId);
-        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${redemption.requestId}.`);
+        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${redemption.requestId} in state ${redemption.finalState}.`);
     }
 
     private getFinalState(redemption: Readonly<AgentRedemption>): AgentRedemptionFinalState | undefined {
@@ -555,9 +565,17 @@ export class AgentBotRedemption {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
-                await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
-            });
+            try {
+                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
+                    await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
+                });
+            } catch (error) {
+                if (errorIncluded(error, ["invalid request id"])) {
+                    logger.warn(`Redemption ${redemption.requestId} doesn't exist any more, probably it has been confirmed by a 3rd party.`)
+                } else {
+                    throw error;
+                }
+            }
             redemption = await this.updateRedemption(rootEm, redemption, {
                 state: AgentRedemptionState.DONE,
             });

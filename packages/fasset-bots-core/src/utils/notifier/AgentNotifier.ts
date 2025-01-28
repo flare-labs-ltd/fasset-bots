@@ -83,6 +83,10 @@ export enum AgentNotificationKey {
     UNDERLYING_PAYMENT_PROOF = "UNDERLYING PAYMENT PROOF REQUESTED",
     UNDERLYING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR UNDERLYING PAYMENT",
     UNDERLYING_PAYMENT_TOP_UP_FAILED = "UNDERLYING TOP UP FAILED",
+    AGENT_UNDERLYING_TOPUP_START = "AGENT'S UNDERLYING TOPUP STARTED",
+    AGENT_UNDERLYING_TOPUP_CREATE = "PAYMENT CREATED FOR AGENT'S UNDERLYING TOPUP",
+    UNDERLYING_WITHDRAWAL_ANNOUNCED = "AGENT ANNOUNCED UNDERLYING WITHDRAWAL",
+    UNDERLYING_WITHDRAWAL_CREATED = "AGENT CREATED UNDERLYING WITHDRAWAL",
     // pool
     BUY_POOL_TOKENS = "BUY POOL TOKENS",
     VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT",
@@ -549,7 +553,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendSelfMintStarted(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_STARTED, `Owner started self mint of ${lots} on vault ${this.address}.`);
+        await this.info(AgentNotificationKey.SELF_MINT_STARTED, `Owner started self mint of ${lots} lots on vault ${this.address}.`);
     }
 
     async sendSelfMintPerformingPayment(lots: string) {
@@ -561,7 +565,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendSelfMintExecuted(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_EXECUTED, `Executed self mint of ${lots} on vault ${this.address}.`);
+        await this.info(AgentNotificationKey.SELF_MINT_EXECUTED, `Executed self mint of ${lots} lots on vault ${this.address}.`);
     }
 
     async sendSelfMintPaymentTooSmall(lots: string, maxMintLots: string) {
@@ -578,10 +582,26 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendSelfMintUnderlyingStarted(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_STARTED, `Started self mint from underlying of ${lots} on vault ${this.address}.`);
+        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_STARTED, `Started self mint from underlying of ${lots} lots on vault ${this.address}.`);
     }
 
     async sendSelfMintUnderlyingExecuted(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_EXECUTED, `Executed self mint from underlying of ${lots} on vault ${this.address}.`);
+        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_EXECUTED, `Executed self mint from underlying of ${lots} lots on vault ${this.address}.`);
+    }
+
+    async sendStartUnderlyingTopup(value: string) {
+        await this.info(AgentNotificationKey.AGENT_UNDERLYING_TOPUP_START, `Owner started underlying topup of ${value} on vault ${this.address}.`);
+    }
+
+    async sendUnderlyingTopupPaymentCreated(value: string) {
+        await this.info(AgentNotificationKey.AGENT_UNDERLYING_TOPUP_CREATE, `Underlying topup payment of ${value} to vault ${this.address} was created. Payment will be proved by agent bot.`);
+    }
+
+    async sendUnderlyingWithdrawalAnnounced(amount: string) {
+        await this.info(AgentNotificationKey.UNDERLYING_WITHDRAWAL_ANNOUNCED, `Agent ${this.address} announced underlying withdrawal of ${amount}.`);
+    }
+
+    async sendUnderlyingWithdrawalCreated(amount: string) {
+        await this.info(AgentNotificationKey.UNDERLYING_WITHDRAWAL_CREATED, `Agent ${this.address} added payment for underlying withdrawal of ${amount}.`);
     }
 }

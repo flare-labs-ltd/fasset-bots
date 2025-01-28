@@ -86,7 +86,10 @@ describe("testXRP attestation/flare data connector tests", () => {
         expect(resp!.data).is.not.null;
     });
 
-    it.skip("Should submit ReferencedPaymentNonexistence request", async () => {
+    it("Should submit ReferencedPaymentNonexistence request", async () => {
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets, INDEXER_URL_XRP));
+        const lastFinalizedBlockNo = await blockChainIndexerClient.getLastFinalizedBlockNumber();
+        const lastFinalizedBlock = await blockChainIndexerClient.getBlockAt(lastFinalizedBlockNo);
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
             sourceId: chainId.sourceId,
@@ -97,9 +100,9 @@ describe("testXRP attestation/flare data connector tests", () => {
                 checkSourceAddresses: false,
                 sourceAddressesRoot: ZERO_BYTES32,
                 destinationAddressHash: keccak256("123"),
-                minimalBlockNumber: "2470000",
-                deadlineBlockNumber: "2470543",
-                deadlineTimestamp: "1732181500",
+                minimalBlockNumber: String(lastFinalizedBlock!.number - 1000),
+                deadlineBlockNumber: String(lastFinalizedBlock!.number - 1),
+                deadlineTimestamp: String(lastFinalizedBlock!.timestamp - 1),
             },
         };
         const resp = await flareDataConnectorClient.submitRequest(request);
@@ -160,7 +163,7 @@ describe("testBTC attestation/flare data connector tests", () => {
         );
     });
 
-    it.skip("Should submit ConfirmedBlockHeightExists request", async () => {
+    it("Should submit ConfirmedBlockHeightExists request", async () => {
         const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_BTC, indexerApiKey(secrets, INDEXER_URL_BTC));
         const lastFinalizedBlock = await blockChainIndexerClient.getLastFinalizedBlockNumber();
         const queryWindow = 86400;
@@ -194,7 +197,10 @@ describe("testBTC attestation/flare data connector tests", () => {
         expect(resp!.data).is.not.null;
     });
 
-    it.skip("Should submit ReferencedPaymentNonexistence request", async () => {
+    it("Should submit ReferencedPaymentNonexistence request", async () => {
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_BTC, indexerApiKey(secrets, INDEXER_URL_BTC));
+        const lastFinalizedBlockNo = await blockChainIndexerClient.getLastFinalizedBlockNumber();
+        const lastFinalizedBlock = await blockChainIndexerClient.getBlockAt(lastFinalizedBlockNo);
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
             sourceId: chainId.sourceId,
@@ -205,9 +211,9 @@ describe("testBTC attestation/flare data connector tests", () => {
                 checkSourceAddresses: false,
                 sourceAddressesRoot: ZERO_BYTES32,
                 destinationAddressHash: keccak256("123"),
-                minimalBlockNumber: "3489102",
-                deadlineBlockNumber: "3489122",
-                deadlineTimestamp: "1732630843",
+                minimalBlockNumber: String(lastFinalizedBlock!.number - 100),
+                deadlineBlockNumber: String(lastFinalizedBlock!.number - 1),
+                deadlineTimestamp: String(lastFinalizedBlock!.timestamp - 1),
             },
         };
         const resp = await flareDataConnectorClient.submitRequest(request);
@@ -301,7 +307,10 @@ describe("testDOGE attestation/flare data connector tests", () => {
         expect(resp!.data).is.not.null;
     });
 
-    it.skip("Should submit ReferencedPaymentNonexistence request", async () => {
+    it("Should submit ReferencedPaymentNonexistence request", async () => {
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_DOGE, indexerApiKey(secrets, INDEXER_URL_DOGE));
+        const lastFinalizedBlockNo = await blockChainIndexerClient.getLastFinalizedBlockNumber();
+        const lastFinalizedBlock = await blockChainIndexerClient.getBlockAt(lastFinalizedBlockNo);
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
             sourceId: chainId.sourceId,
@@ -312,9 +321,9 @@ describe("testDOGE attestation/flare data connector tests", () => {
                 checkSourceAddresses: false,
                 sourceAddressesRoot: ZERO_BYTES32,
                 destinationAddressHash: keccak256("123"),
-                minimalBlockNumber: "6727041",
-                deadlineBlockNumber: "6727141",
-                deadlineTimestamp: "1732873336",
+                minimalBlockNumber: String(lastFinalizedBlock!.number - 100),
+                deadlineBlockNumber: String(lastFinalizedBlock!.number - 1),
+                deadlineTimestamp: String(lastFinalizedBlock!.timestamp - 1),
             },
         };
         const resp = await flareDataConnectorClient.submitRequest(request);
