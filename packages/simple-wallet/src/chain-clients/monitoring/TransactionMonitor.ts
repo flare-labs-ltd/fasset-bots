@@ -246,6 +246,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         let count = 0;
         while (this.monitoring) {
             try {
+                threadEm.clear();
                 const networkUp = await wallet.checkNetworkStatus();
                 if (!networkUp) {
                     logger.error(`Network is down ${this.monitoringId} - trying again in ${RESTART_IN_DUE_NO_RESPONSE}`);
