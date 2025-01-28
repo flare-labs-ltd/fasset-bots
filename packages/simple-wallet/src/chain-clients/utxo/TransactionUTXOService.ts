@@ -279,6 +279,8 @@ export class TransactionUTXOService {
                 return [...utxoList, utxos[smallestUTXOIndex]];
             } else if (between(changeValue, toBN(0), getDustAmount(this.chainType))) {
                 return utxoList;
+            } else if (changeValue.gte(this.minimumUTXOValue)) {
+                return utxoList;
             }
         }
         return null;
