@@ -3,7 +3,7 @@ import {
     BTC,
     ICreateWalletResponse,
     ITransactionMonitor,
-    logger, TransactionEntity,
+    logger,
     TransactionStatus,
 } from "../../src";
 import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -11,12 +11,8 @@ import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { addConsoleTransportForTests, waitForTxToFinishWithStatus } from "../test-util/common_utils";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 import sinon from "sinon";
-import { transactional, updateTransactionEntity } from "../../src/db/dbutils";
-import {
-    createTransactionEntityWithInputs,
-    createTransactionInputEntity,
-    createUTXO
-} from "../test-util/entity_utils";
+import { updateTransactionEntity } from "../../src/db/dbutils";
+import { createUTXO } from "../test-util/entity_utils";
 import { toBN } from "web3-utils";
 import BN from "bn.js";
 import * as bitcore from "bitcore-lib";
@@ -26,8 +22,6 @@ import { BtcWalletImplementation } from "../../src/chain-clients/implementations
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
-import { ChainType } from "../../src/utils/constants";
-import { RequiredEntityData } from "@mikro-orm/core";
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -155,46 +149,4 @@ describe("UTXOWalletImplementation unit tests", () => {
         expect(tr.getFee()).to.be.eq(100);
     });
 
-    it.skip("If ORM is cleared transaction is lost", async () => {
-        const input1 = createTransactionInputEntity("txHash1", 0);
-        const tx2 = createTransactionEntityWithInputs("address1", "address2", "txHash2", [input1], 1);
-        await wClient.rootEm.persistAndFlush(tx2);
-
-        // @ts-ignore
-        input1.transaction = null;
-        try {
-            await transactional(wClient.rootEm, async (em) => {
-                const ent = em.create(TransactionEntity, {
-                    chainType: ChainType.testBTC,
-                    source: "source",
-                    destination: "destination",
-                    status: TransactionStatus.TX_CREATED,
-                    maxFee: null,
-                    executeUntilBlock: null,
-                    executeUntilTimestamp: null,
-                    reference: null,
-                    amount: toBN(0),
-                    fee: null,
-                    rbfReplacementFor: null,
-                    feeSource: null,
-                    maxPaymentForFeeSource: null,
-                    isFreeUnderlyingTransaction: false,
-                    minFeePerKB: null
-                } as RequiredEntityData<TransactionEntity>);
-                await em.persistAndFlush(ent);
-            });
-        } catch (e) {
-            console.error(e);
-            wClient.rootEm.clear();
-        }
-
-        const tx1 = createTransactionEntityWithInputs("address1", "address2", "txHash1", [], 1);
-        await wClient.rootEm.persistAndFlush(tx1);
-
-        const entities = await wClient.rootEm.find(TransactionEntity, {});
-        expect(entities.length).to.be.eq(2);
-        for (const e of entities) {
-            console.log(`${e.id}: ${e.source}->${e.destination}`);
-        }
-    });
 });
