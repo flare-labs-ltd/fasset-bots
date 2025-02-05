@@ -106,13 +106,13 @@ export interface StuckTransaction {
    feeIncrease?: number; // Factor to increase fee in resubmitting process (should be integer)
    executionBlockOffset?: number; //
    enoughConfirmations? : number; // number of confirmations to be declared successful
+   desiredChangeValue?: number; // value that change output should be (as close as possible) in base unit (DOGE, BTC)
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
 
 export interface BaseWalletConfig extends WalletServiceConfigBase {
    stuckTransactionOptions?: StuckTransaction;
-   enoughConfirmations?: number,
    em: EntityManager;
    walletKeys: IWalletKeys;
 }
@@ -152,4 +152,16 @@ export interface BlockStats {
    blockHeight: number;
    averageFeePerKB: BN;
    blockTime: BN;
+}
+
+export interface TransactionData {
+   txId: number;
+   source: string;
+   destination: string;
+   amount: BN;
+   fee?: BN;
+   feePerKB?: BN;
+   useChange: boolean;
+   note?: string;
+   desiredChangeValue: BN;
 }

@@ -62,10 +62,10 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.createConfig = createConfig;
       const resubmit = stuckTransactionConstants(this.chainType);
 
-      this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
+      this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset;
 
-      this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
-      this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
+      this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease;
+      this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset;
       this.rootEm = overrides.walletEm ?? createConfig.em;
       this.walletKeys = createConfig.walletKeys;
    }
@@ -248,13 +248,17 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    async resubmitSubmissionFailedTransactions(txEnt: TransactionEntity): Promise<void> {
       logger.info(`Resubmitting submission failed transaction ${txEnt.id}.`);
-      const transaction = JSON.parse(txEnt.raw!) as xrpl.Payment | xrpl.AccountDelete;
-      const privateKey = await this.walletKeys.getKey(txEnt.source);
-      if (!privateKey) {
-         await handleMissingPrivateKey(this.rootEm, txEnt.id, "resubmitSubmissionFailedTransactions");
-         return;
+      if (txEnt.raw) {
+         const transaction = JSON.parse(txEnt.raw) as xrpl.Payment | xrpl.AccountDelete;
+         const privateKey = await this.walletKeys.getKey(txEnt.source);
+         if (!privateKey) {
+            await handleMissingPrivateKey(this.rootEm, txEnt.id, "resubmitSubmissionFailedTransactions");
+            return;
+         }
+         await this.resubmitTransaction(txEnt.id, privateKey, transaction);
+      } else {
+         logger.warn(`Cannot resubmit submission failed transaction ${txEnt.id} due to undefined 'txEnt.raw'`);
       }
-      await this.resubmitTransaction(txEnt.id, privateKey, transaction);
    }
 
    async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
@@ -622,11 +626,12 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @returns {Object} - account info
     */
    async getAccountInfo(account: string): Promise<AccountInfoResponse> {
-      const params = {
+      const params: AccountInfoRequest = {
+         command: 'account_info',
          account: account,
          signer_lists: true,
          ledger_index: "current",
-      } as AccountInfoRequest;
+      };
       const res = await this.blockchainAPI.getAccountInfo(params);
       return res.data;
    }

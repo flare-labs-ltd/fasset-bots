@@ -1,5 +1,4 @@
 import {
-    AccountBalanceResponse,
     FeeStatsResponse,
     IBlockchainAPI,
     MempoolUTXO,
@@ -10,7 +9,7 @@ import { AxiosInstance, AxiosResponse } from "axios";
 import { WalletServiceConfigBase } from "../interfaces/IWalletTransaction";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
-import { toBN, toNumber } from "../utils/bnutils";
+import { toBN } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
 import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
 import { stuckTransactionConstants } from "../utils/utils";
@@ -43,20 +42,15 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
         }
     }
 
-    async getAccountBalance(account: string): Promise<AccountBalanceResponse> {
+    async getAccountBalance(account: string): Promise<BN> {
         return await this.logRequest(`getAccountBalance(${account})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOAddressResponse>(`/address/${account}`);
             const totalBalance = res.data.balance;
             const unconfirmedBalance = res.data.unconfirmedBalance;
-            const unconfirmedTxs = res.data.unconfirmedTxs;
 
             const totBalance = toBN(totalBalance);
             const uncBalance = toBN(unconfirmedBalance);
-            return {
-                balance: toNumber(totBalance.add(uncBalance)),
-                unconfirmedBalance: toNumber(uncBalance),
-                unconfirmedTxs: toNumber(unconfirmedTxs),
-            } as AccountBalanceResponse;
+            return totBalance.add(uncBalance);
         }, "getAccountBalance"));
     }
 
@@ -138,7 +132,7 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
             const totalPages = firstResp.data.totalPages ?? 0;
             for (let i = 0; i < totalPages; i++) {
                 params.set("page", String(i + 1));
-                const resp = await client.get<UTXOAddressResponse>(`/address/${address}?${{...params}.toString()}`);
+                const resp = await client.get<UTXOAddressResponse>(`/address/${address}?${params.toString()}`);
                 const inputSet = new Set(inputs.map(input => `${input.prevTxId}:${input.outputIndex}`));
 
                 for (const txHash of resp.data.txids ?? []) {

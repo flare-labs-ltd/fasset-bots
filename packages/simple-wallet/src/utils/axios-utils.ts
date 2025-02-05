@@ -113,7 +113,13 @@ export class NegativeFeeError extends Error {
     }
 }
 
-export class MissingAmountError extends Error {
+export class MissingFieldError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
+export class RBFRestrictionsNotMetError extends Error {
     constructor(message: string) {
         super(message);
     }

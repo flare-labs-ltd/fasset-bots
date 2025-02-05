@@ -10,7 +10,6 @@ import { logger } from "../../src";
 import { toBN } from "../../src/utils/bnutils";
 import { isORMError } from "../../src";
 import {
-    AccountBalanceResponse,
     MempoolUTXO,
     UTXORawTransaction,
     UTXORawTransactionInput,
@@ -21,6 +20,7 @@ import { AxiosInstance, AxiosResponse } from "axios";
 import {read} from "read";
 import fs from "fs";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
+import BN from "bn.js";
 const bitcore = require('bitcore-lib');
 
 export const PASSWORD_MIN_LENGTH = 16;
@@ -165,8 +165,8 @@ export class MockBlockchainAPI extends UTXOBlockchainAPI {
         return Promise.resolve(toBN(0));
     }
 
-    async getAccountBalance(): Promise<AccountBalanceResponse> {
-        return Promise.resolve({balance: 0, unconfirmedBalance: 0, unconfirmedTxs: 0});
+    async getAccountBalance(): Promise<BN> {
+        return Promise.resolve(toBN(0));
     }
 
     async getCurrentBlockHeight(): Promise<number> {

@@ -31,7 +31,7 @@ describe("Fee service tests BTC", () => {
             ...BTCMccConnectionTestInitial,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            enoughConfirmations: 2
+            stuckTransactionOptions: { enoughConfirmations: 2 }
         };
         client = BTC.initialize(BTCMccConnectionTest);
         feeService = client.feeService;

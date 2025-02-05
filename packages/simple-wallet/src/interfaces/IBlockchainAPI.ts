@@ -3,7 +3,7 @@ import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 
 export interface IBlockchainAPI {
-    getAccountBalance(account: string): Promise<AccountBalanceResponse | undefined>;
+    getAccountBalance(account: string): Promise<BN | undefined>;
 
     sendTransaction(tx: string): Promise<AxiosResponse>;
 
@@ -29,12 +29,7 @@ export interface MempoolUTXO {
     confirmed: boolean,
     script: string,
 }
-//https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
-export interface AccountBalanceResponse {
-    balance: number,
-    unconfirmedBalance: number;
-    unconfirmedTxs: number;
-}
+
 //https://github.com/trezor/blockbook/blob/4a7fdb509569a31ada721801d1ff57ad88afa553/blockbook-api.ts
 export interface UTXOResponse {
     txid: string;

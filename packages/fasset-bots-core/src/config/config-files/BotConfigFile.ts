@@ -31,6 +31,7 @@ interface StuckTransaction {
     feeIncrease?: number; // Factor to increase fee in resubmitting process
     executionBlockOffset?: number; //
     enoughConfirmations?: number; // number of confirmations to be declared successful
+    desiredChangeValue?: number; // value that change output should be (as close as possible) in main units (DOGE, BTC)
 }
 
 export interface BotFAssetInfo {
@@ -71,11 +72,6 @@ export interface PricePublisherConfig {
 
 export interface BotConfigFile {
     ormOptions?: OrmConfigOptions; // only for agent bot
-    walletOptions?: {
-        blockOffset?: number; // How many block to wait for transaction to be validated
-        retries?: number; // How many times should transaction retry to successfully submit
-        feeIncrease?: number; // Factor to increase fee in resubmitting process
-    }; // optional wallet options, only for agent
     fAssets: { [fAssetSymbol: string]: BotFAssetInfo };
     // notifierFile: string;
     loopDelay: number;

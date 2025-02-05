@@ -54,7 +54,6 @@ function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override:
         result[key] = value;
     }
     result.ormOptions = { ...config.ormOptions, ...override.ormOptions };
-    result.walletOptions = { ...config.walletOptions, ...override.walletOptions };
     result.nativeChainInfo = { ...config.nativeChainInfo, ...override.nativeChainInfo };
     result.fAssets = mergeFAssets(overrideFile, config.fAssets, override.fAssets, validate, fAssetInfoLoader, "fAssets");
     result.agentBotSettings = { ...config.agentBotSettings, ...override.agentBotSettings };

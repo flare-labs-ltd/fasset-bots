@@ -4,7 +4,7 @@ import {
     transactional,
     transformUTXOToTxInputEntity
 } from "../../db/dbutils";
-import BN, { min } from "bn.js";
+import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import {
     ChainType,
@@ -13,45 +13,29 @@ import {
     UNKNOWN_SOURCE,
 } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { EntityManager, getOnConflictReturningFields, Loaded, RequiredEntityData } from "@mikro-orm/core";
-import { FeeStatus } from "./TransactionFeeService";
+import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
 import {
     getDustAmount,
-    getMinimumUTXOValue,
-    getRelayFeePerKB,
-    isEnoughUTXOs
+    getMinimumUsefulUTXOValue,
+    isEnoughUTXOs,
+    rearrangeUTXOs
 } from "./UTXOUtils";
 import {
     MempoolUTXO,
     UTXORawTransaction,
-    UTXORawTransactionInput,
-    UTXOVinResponse
+    UTXORawTransactionInput
 } from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { IUtxoWalletServices } from "./IUtxoWalletServices";
-import { between } from "../../utils/utils";
+import { TransactionData } from "../../interfaces/IWalletTransaction";
 
-export interface TransactionData {
-    source: string;
-    destination: string;
-    amount: BN;
-    fee?: BN;
-    feePerKB?: BN;
-    useChange: boolean;
-    note?: string;
-    replacementFor?: TransactionEntity;
-    maxFee?: BN
-}
 
 export class TransactionUTXOService {
     private readonly chainType: ChainType;
     private readonly enoughConfirmations: number;
 
-    readonly minimumUTXOValue: BN;
-
-    private readonly services: IUtxoWalletServices;
     private readonly rootEm: EntityManager;
     private readonly blockchainAPI: UTXOBlockchainAPI;
 
@@ -60,12 +44,8 @@ export class TransactionUTXOService {
     private timestampTracker: number;
 
     constructor(services: IUtxoWalletServices, chainType: ChainType, enoughConfirmations: number) {
-        this.services = services;
         this.chainType = chainType;
         this.enoughConfirmations = enoughConfirmations;
-
-        /* istanbul ignore next */
-        this.minimumUTXOValue = getMinimumUTXOValue(this.chainType);
 
         this.rootEm = services.rootEm;
         this.blockchainAPI = services.blockchainAPI;
@@ -86,233 +66,118 @@ export class TransactionUTXOService {
      * Retrieves unspent transactions in format accepted by transaction
      * @param txData
      * @param source
-     * @param rbfedRawTx
      * @returns {UTXOEntity[]}
      */
-    async fetchUTXOs(txData: TransactionData, source: string, rbfedRawTx?: string): Promise<MempoolUTXO[]> {
+    async fetchUTXOs(txData: TransactionData): Promise<MempoolUTXO[][] | null> {
         await this.removeOldUTXOScripts();
 
-        logger.info(`Listing UTXOs for address ${source}`);
-        const currentFeeStatus = await this.services.transactionFeeService.getCurrentFeeStatus(txData.feePerKB);
-        const unspentUTXOs = await this.filteredAndSortedMempoolUTXOs(source);
-        const rbfUTXOs = await this.getRbfUTXOs(source, rbfedRawTx);
-        const needed = await this.selectUTXOs(unspentUTXOs, rbfUTXOs, txData, currentFeeStatus);
+        logger.info(`Listing UTXOs for address ${JSON.stringify(txData)} and transaction ${txData.txId}`);
+        const unspentUTXOs = await this.sortedMempoolUTXOs(txData.source);
+        const needed = await this.selectUTXOs(unspentUTXOs, txData);
         if (needed) {
             return needed;
-        }
-        return [];
-    }
-
-    async getRbfUTXOs(source: string, rbfedRawTx?: string): Promise<MempoolUTXO[]> {
-        if (rbfedRawTx) {
-            const rbfedRaw = JSON.parse(rbfedRawTx) as UTXORawTransaction;
-            const rbfedInputs = [];
-            for (const input of rbfedRaw.inputs) {
-                const tx = await this.blockchainAPI.getTransaction(input.prevTxId);
-                if (tx.vout[input.outputIndex].addresses.includes(source)) {
-                    rbfedInputs.push(input);
-                }
-            }
-            return await this.createUTXOMempoolFromInputs(source, rbfedInputs);
-        }
-        return [];
-    }
-
-    private async selectUTXOs(allUTXOs: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData, feeStatus: FeeStatus): Promise<MempoolUTXO[] | null> {
-        // filter out dust inputs
-        const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType)));
-        const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType))); // should not be necessary
-
-        if (validRbfUTXOs && validRbfUTXOs.length > 0) {
-            logger.info(`Transaction got RBF UTXOs: ${validRbfUTXOs.map(t => `${t.transactionHash.toString()}, ${t.position.toString()}`).join('; ')}`);
-        }
-
-        if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
-            logger.info(`Account ${txData.source} doesn't have enough UTXOs - Skipping selection.
-                Amount: ${txData.amount.toNumber()},
-                UTXO values: [${rbfUTXOs.concat(allUTXOs).map(t => t.value.toNumber()).join(', ')}],
-                ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
-            );
-            return null;
-        }
-
-        const minimalUTXOs = validUTXOs.filter((utxo) => utxo.value.lt(this.minimumUTXOValue));
-        const notMinimalUTXOs = validUTXOs.filter((utxo) => utxo.value.gte(this.minimumUTXOValue));
-
-        let utxos: MempoolUTXO[] = notMinimalUTXOs;
-        let usingMinimalUTXOs = false; // If we're using the UTXOs which are < this.minimumUTXOValue
-        if (!isEnoughUTXOs(validRbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
-            utxos = validUTXOs;
-            usingMinimalUTXOs = true;
-        }
-        if (rbfUTXOs.length > 0) {
-            utxos = utxos.filter(t => t.confirmed);
-        }
-
-        let res: MempoolUTXO[] | null = null;
-        /* istanbul ignore else */
-        if (feeStatus == FeeStatus.HIGH) {
-            res = await this.collectUTXOs(utxos, validRbfUTXOs, txData);
-            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
-        } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
-            // check if we can build tx with utxos with utxo.value < amountToSend
-            const smallUTXOs = utxos.filter((utxo) => utxo.value.lte(txData.amount));
-            if (isEnoughUTXOs(smallUTXOs, txData.amount, txData.fee)) {
-                res = await this.collectUTXOs(smallUTXOs, validRbfUTXOs, txData, true);
-                if (feeStatus == FeeStatus.MEDIUM) {
-                    res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
-                }
-                if (res && txData.maxFee) {
-                    const transactionService = this.services.transactionService;
-                    const tr = await transactionService.createBitcoreTransaction(
-                        txData.source,
-                        txData.destination,
-                        txData.amount,
-                        txData.fee,
-                        txData.feePerKB,
-                        res,
-                        txData.useChange,
-                        txData.note
-                    );
-                    const currentFee = toBN(tr.getFee());
-                    if (currentFee.gt(txData.maxFee)) {
-                        res = null;
-                    }
-                }
-            }
-            if (!res) { // use the default algorithm
-                res = await this.collectUTXOs(utxos, validRbfUTXOs, txData);
-            }
-        }
-
-        const maximumNumberOfUTXOs = this.getMaximumNumberOfUTXOs(feeStatus);
-        if (res && !usingMinimalUTXOs && feeStatus == FeeStatus.LOW && res.length < maximumNumberOfUTXOs) {
-            for (let i = 0; i < maximumNumberOfUTXOs - res.length && i < minimalUTXOs.length; i++) {
-                res.push(minimalUTXOs[i]);
-            }
-        } // TODO -> check maxFee constraints. Do not use "too much".
-
-        return res;
-    }
-
-    private async collectUTXOs(utxos: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData, usingUTXOLessThanAmount?: boolean) {
-        const baseUTXOs: MempoolUTXO[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
-        const rbfUTXOsValueLeft = rbfUTXOs.length > 0 ? await this.calculateChangeValue(txData, baseUTXOs) : new BN(0);
-        if (rbfUTXOsValueLeft.gte(this.minimumUTXOValue)) {
-            return baseUTXOs;
-        }
-        // If there is an UTXO that covers amount use it, otherwise default to selection algorithm
-        const res = usingUTXOLessThanAmount === true ? null : await this.collectUTXOsMinimal(utxos, rbfUTXOs, txData);
-        if (res) {
-            return res;
-        } else {
-            return this.collectUTXOsFailover(utxos, rbfUTXOs, txData);
-        }
-    }
-
-    private async collectUTXOsFailover(utxos: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData) {
-        const baseUTXOs: MempoolUTXO[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
-        const additionalUTXOs: MempoolUTXO[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= minimalUTXOSize output
-
-        const rbfUTXOsValueLeft = rbfUTXOs.length > 0 ? await this.calculateChangeValue(txData, baseUTXOs) : new BN(0);
-        let positiveValueReached = rbfUTXOsValueLeft.gt(getDustAmount(this.chainType)) && rbfUTXOs.length > 0;
-        for (const utxo of utxos) {
-            const numAncestors = await this.getNumberOfMempoolAncestors(utxo.transactionHash);
-            if (numAncestors + 1 >= MEMPOOL_CHAIN_LENGTH_LIMIT) {
-                logger.info(
-                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${MEMPOOL_CHAIN_LENGTH_LIMIT} for UTXO with hash ${utxo.transactionHash} and position ${utxo.position}`
-                );
-                continue; //skip this utxo
-            }
-
-            if (!positiveValueReached) {
-                baseUTXOs.push(utxo);
-                additionalUTXOs.push(utxo);
-                const satisfiedChangeForBase = (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType));
-                positiveValueReached = satisfiedChangeForBase;
-            } else {
-                if (utxo.confirmed) {
-                    additionalUTXOs.push(utxo);
-                }
-            }
-            const satisfiedChangeForAdditional = (await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue);
-            if (satisfiedChangeForAdditional) {
-                return additionalUTXOs;
-            }
-        }
-
-        if (!positiveValueReached) {
-            logger.info(
-                `Failed to collect enough UTXOs to cover amount and fee for account ${txData.source}.
-                    Amount: ${txData.amount.toNumber()},
-                    UTXO values: [${baseUTXOs.map(t => t.value.toNumber()).join(', ')}],
-                    ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
-            );
-        }
-        return positiveValueReached ? baseUTXOs : null;
-    }
-
-    private async collectUTXOsMinimal(utxos: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData) {
-        for (let i = utxos.length - 1; i > -1; i--) {
-            const utxo = utxos[i];
-            const numAncestors = await this.getNumberOfMempoolAncestors(utxo.transactionHash);
-            if (numAncestors + 1 >= MEMPOOL_CHAIN_LENGTH_LIMIT) {
-                logger.info(
-                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${MEMPOOL_CHAIN_LENGTH_LIMIT} for UTXO with hash ${utxo.transactionHash} and position ${utxo.position}`
-                );
-                continue; //skip this utxo
-            }
-            const utxoList = [...rbfUTXOs, utxo];
-            const changeValue = await this.calculateChangeValue(txData, utxoList);
-            if (changeValue.gtn(0) && between(changeValue, getDustAmount(this.chainType), this.minimumUTXOValue)) {
-                let smallestUTXOIndex = -1;
-                for (let j = utxos.length - 1; j > 0; j--) {
-                    if (j !== i && 1 + (await this.getNumberOfMempoolAncestors(utxos[j].transactionHash)) < MEMPOOL_CHAIN_LENGTH_LIMIT) {
-                        smallestUTXOIndex = j;
-                        break;
-                    }
-                }
-                if (smallestUTXOIndex < 0) {
-                    return null;
-                }
-
-                return [...utxoList, utxos[smallestUTXOIndex]];
-            } else if (between(changeValue, toBN(0), getDustAmount(this.chainType))) {
-                return utxoList;
-            }
         }
         return null;
     }
 
-    private async removeExcessUTXOs(utxos: MempoolUTXO[] | null, rbfUTXOsLength: number, txData: TransactionData, feeStatus: FeeStatus) {
-        if (utxos === null) {
+    /**
+     * Retrieves utxos to use in rbf transactions in format accepted by transaction
+     * @param source
+     * @param rbfedRawTx
+     * @returns {UTXOEntity[]}
+     */
+    async getRbfUTXOs(source: string, rbfedRawTx: string): Promise<MempoolUTXO[]> {
+        const rbfedRaw = JSON.parse(rbfedRawTx) as UTXORawTransaction;
+        const rbfedInputs = [];
+        for (const input of rbfedRaw.inputs) {
+            const tx = await this.blockchainAPI.getTransaction(input.prevTxId);
+            if (tx.vout[input.outputIndex].addresses.includes(source)) {
+                rbfedInputs.push(input);
+            }
+        }
+        return await this.createUTXOMempoolFromInputs(source, rbfedInputs);
+    }
+
+    private async selectUTXOs(allUTXOs: MempoolUTXO[], txData: TransactionData): Promise<MempoolUTXO[][] | null> {
+        // filter out dust inputs
+        const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType)));
+
+        if (!isEnoughUTXOs(allUTXOs, txData)) {
             return null;
         }
-        const baseUTXOs: MempoolUTXO[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= 0 output
-        const additionalUTXOs: MempoolUTXO[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= minimalUTXOSize output
 
-        const nonRbfUTXOs = this.sortUTXOs(utxos.slice(rbfUTXOsLength));
-        let positiveValueReached = false;
+        let validChoices: MempoolUTXO[][] = [];
+        const confirmedUTXOs = validUTXOs.filter((utxo) => utxo.confirmed);
+        const onlyConfirmed = await this.gatherUTXOS(confirmedUTXOs, txData);
+        if (onlyConfirmed) {
+            validChoices = [...onlyConfirmed];
+        }
+        const confirmedAndMempool = await this.gatherUTXOS(validUTXOs, txData);
+        if (confirmedAndMempool) {
+            validChoices = [...confirmedAndMempool];
+        }
+        if (validChoices.length > 0) {
+            return validChoices;
+        } else {
+            return null;
+        }
+    }
 
-        if (nonRbfUTXOs.length === 0) {
-            return utxos;
+    private async gatherUTXOS(utxos: MempoolUTXO[], txData: TransactionData): Promise<MempoolUTXO[][]> {
+        const desiredChangeValue: BN = txData.desiredChangeValue;
+        const amountToCover: BN = txData.amount.add(txData.fee ?? toBN(0));
+
+        let bestUtxoWithChange: MempoolUTXO[] = []; // smallest utxo where amountToSent + change >= utxo.value
+        let bestUtxoWithoutChange: MempoolUTXO[] = []; // smallest utxo where amountToSent >= utxo.value
+        let bestUtxoWithAdditionalToCreateChange: MempoolUTXO[] = []; // smallest utxo where amountToSent >= utxo.value
+        const smallUtxosWithChange: MempoolUTXO[] = []; // multiple utxos, where utxo.value <= amountToSent and sum(utxo.value) + change >= utxo.value
+        const smallUtxosWithAlmostChange: MempoolUTXO[] = []; // multiple utxos, where utxo.value <= amountToSent and sum(utxo.value) + change >= utxo.value
+        const smallUtxosWithoutChange: MempoolUTXO[] = []; // multiple utxos, where utxo.value <= amountToSent and sum(utxo.value) >= utxo.value
+
+        let totalSmallWithChange = toBN(0);
+        let totalSmallWithAlmostChange = toBN(0);
+        let totalSmallWithoutChange = toBN(0);
+
+        const amountToSendWithChange = amountToCover.add(desiredChangeValue);
+        const amountToSendWithoutChange = amountToCover.add(getMinimumUsefulUTXOValue(this.chainType));
+
+        for (const utxo of utxos) {
+            console.log(utxo.transactionHash, utxo.position, utxo.value.toString())
+            if (utxo.value.gte(amountToSendWithChange)) { // find smallest where amountToSent + change >= utxo.value
+                bestUtxoWithChange = [utxo];
+            }
+            if (utxo.value.gte(amountToSendWithoutChange) && utxo.value.lt(amountToSendWithChange) && (bestUtxoWithoutChange.length === 0 || bestUtxoWithoutChange[0].value.lt(utxo.value))) { // find smallest where amountToSent >= utxo.value && amountToSent < amountToSendWithChange
+                console.log("----!!!!!!!----", utxo.value.toString())
+                    bestUtxoWithoutChange = [utxo];
+            }
+            if (utxo.value.lte(amountToCover)) { // using utxo <= amount
+                if (totalSmallWithChange.lt(amountToSendWithChange)) { // with lot change
+                    totalSmallWithChange = totalSmallWithChange.add(utxo.value);
+                    smallUtxosWithChange.push(utxo);
+                }
+                if (totalSmallWithoutChange.lt(amountToSendWithoutChange) && totalSmallWithoutChange.add(utxo.value).lt(amountToSendWithChange)) { // no lot change
+                    totalSmallWithoutChange = totalSmallWithoutChange.add(utxo.value);
+                    smallUtxosWithoutChange.push(utxo);
+                }
+                if ((totalSmallWithAlmostChange.lt(amountToSendWithoutChange) && totalSmallWithAlmostChange.add(utxo.value).lt(amountToSendWithChange)) ||
+                    (totalSmallWithAlmostChange.add(utxo.value).gte(amountToSendWithoutChange) && totalSmallWithAlmostChange.add(utxo.value).lt(amountToSendWithChange))) { // almost lot change
+                    totalSmallWithAlmostChange = totalSmallWithAlmostChange.add(utxo.value);
+                    smallUtxosWithAlmostChange.push(utxo);
+                }
+            }
+            if (bestUtxoWithoutChange.length === 1 &&
+                (bestUtxoWithoutChange[0].transactionHash != utxo.transactionHash || bestUtxoWithoutChange[0].transactionHash == utxo.transactionHash && bestUtxoWithoutChange[0].position != utxo.position) &&
+                bestUtxoWithoutChange[0].value.add(utxo.value).gte(amountToSendWithChange)) {
+                bestUtxoWithAdditionalToCreateChange = [bestUtxoWithoutChange[0], utxo];
+            }
         }
 
-        for (const utxo of nonRbfUTXOs) {
-            if (!positiveValueReached) {
-                baseUTXOs.push(utxo);
-            }
-            additionalUTXOs.push(utxo);
+        const residualAmount = smallUtxosWithChange.reduce((sum, utxo) => sum.add(utxo.value), toBN(0)).sub(amountToCover);
+        const rearrangeUTXOsWithChangeBySmallestDiff = rearrangeUTXOs([bestUtxoWithChange, residualAmount.gte(desiredChangeValue) ? smallUtxosWithChange : [], bestUtxoWithAdditionalToCreateChange], true, amountToCover);
+        const rearrangeUTXOsNoChangeByHighestDiff = rearrangeUTXOs([bestUtxoWithoutChange, smallUtxosWithoutChange, smallUtxosWithAlmostChange], false, amountToCover);
+        const validChoices: MempoolUTXO[][] = [...rearrangeUTXOsWithChangeBySmallestDiff, ...rearrangeUTXOsNoChangeByHighestDiff];
 
-            if (!positiveValueReached && (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType))) {
-                positiveValueReached = true;
-            }
-            if ((await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue) && (additionalUTXOs.length - baseUTXOs.length) < this.getMaximumNumberOfUTXOs(feeStatus) / 2) {
-                return additionalUTXOs;
-            }
-        }
-
-        return positiveValueReached ? baseUTXOs : null;
+        return validChoices;
     }
 
     public async getNumberOfMempoolAncestors(txHash: string): Promise<number> {
@@ -344,37 +209,6 @@ export class TransactionUTXOService {
                 }
             }
             return ancestors;
-        }
-    }
-
-    private async calculateChangeValue(txData: TransactionData, utxos: MempoolUTXO[]): Promise<BN> {
-        const transactionService = this.services.transactionService;
-        const fee = txData.replacementFor ? undefined : txData.fee;
-        const tr = await transactionService.createBitcoreTransaction(
-            txData.source,
-            txData.destination,
-            txData.amount,
-            fee,
-            txData.feePerKB,
-            utxos,
-            txData.useChange,
-            txData.note
-        );
-        const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
-        const calculatedTxFee = toBN(tr.getFee());
-        if (txData.fee && txData.fee.gtn(0)) {
-            if (txData.replacementFor) {
-                const size = tr._estimateSize();
-                const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
-                const relayFee = toBN(size).mul(relayFeePerB);
-                return min(valueBeforeFee.sub(txData.fee).sub(relayFee), valueBeforeFee.sub(relayFee).sub(calculatedTxFee)); // TODO
-            } else {
-                return valueBeforeFee.sub(txData.fee);
-            }
-        } else if (calculatedTxFee.ltn(0)) {
-            return toBN(-10); // return any negative value
-        } else {
-            return valueBeforeFee.sub(calculatedTxFee);
         }
     }
 
@@ -464,30 +298,6 @@ export class TransactionUTXOService {
         return inputs;
     }
 
-    private sortUTXOs(utxos: MempoolUTXO[]) {
-        return utxos.sort((a, b) => {
-            if (a.confirmed === b.confirmed) {
-                const valueComparison = b.value.sub(a.value).toNumber(); // if they are both confirmed or unconfirmed, sort by value
-                if (valueComparison === 0) { // if values are also the same => shuffle randomly
-                    return Math.random() < 0.5 ? -1 : 1;
-                }
-                return valueComparison;
-            }
-            return Number(b.confirmed) - Number(a.confirmed);
-        });
-    }
-
-    private getMaximumNumberOfUTXOs(status: FeeStatus) {
-        switch (status) {
-            case FeeStatus.HIGH:
-                return 10;
-            case FeeStatus.MEDIUM:
-                return 15;
-            case FeeStatus.LOW:
-                return 20;
-        }
-    }
-
     private async findTransactionInputsBySourceAndStatuses(source: string): Promise<Set<string>> {
         const pendingTransactionEntities: TransactionEntity[] = await findTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PENDING, TransactionStatus.TX_REPLACED_PENDING], source);
         const pendingInputSet = new Set<string>();
@@ -502,17 +312,14 @@ export class TransactionUTXOService {
         return pendingInputSet;
     }
 
-    async filteredAndSortedMempoolUTXOs(source: string): Promise<MempoolUTXO[]> {
+    async sortedMempoolUTXOs(source: string): Promise<MempoolUTXO[]> {
         const mempoolUTXOs = await this.blockchainAPI.getUTXOsFromMempool(source);
         const pendingInputs = await this.findTransactionInputsBySourceAndStatuses(source);
         const filteredMempoolUTXOs = mempoolUTXOs.filter(
             utxo => !pendingInputs.has(`${utxo.transactionHash}:${utxo.position}`)
         );
-        // sort by confirmed and then by value (descending)
+        // sort by value (descending)
         const sortedMempoolUTXOs = filteredMempoolUTXOs.sort((a, b) => {
-            if (a.confirmed !== b.confirmed) {
-                return b.confirmed ? 1 : -1;
-            }
             const aValue = (a.value);
             const bValue = (b.value);
             return Number(bValue.sub(aValue));

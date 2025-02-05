@@ -57,9 +57,6 @@ export class TransactionEntity {
     executeUntilTimestamp?: BN;
 
     @Property({ nullable: true  })
-    confirmations?: number;
-
-    @Property({ nullable: true  })
     reference?: string;
 
     @Property({ type: BNType, nullable: true  })

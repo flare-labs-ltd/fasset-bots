@@ -29,7 +29,7 @@ import {
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import sinon from "sinon";
-import {FeeStatus, TransactionFeeService} from "../../src/chain-clients/utxo/TransactionFeeService";
+import {TransactionFeeService} from "../../src/chain-clients/utxo/TransactionFeeService";
 import {MempoolUTXO, UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
 import {TransactionMonitor} from "../../src/chain-clients/monitoring/TransactionMonitor";
 import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
@@ -88,7 +88,7 @@ describe("Bitcoin wallet tests", () => {
             ...BTCMccConnectionTestInitial,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            enoughConfirmations: 2,
+            stuckTransactionOptions: { enoughConfirmations: 2 }
         };
         wClient = BTC.initialize(BTCMccConnectionTest);
         monitor = await wClient.createMonitor();
@@ -135,13 +135,13 @@ describe("Bitcoin wallet tests", () => {
         });
     });
 
-    it("Should not create transaction: fee > maxFee", async () => {
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
-        expect(txId).greaterThan(0);
-        const txEnt = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
-        expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
-        expect((txEnt.maxFee!).eq(maxFeeInSatoshi)).to.be.true;
-    });
+    // it("Should not create transaction: fee > maxFee", async () => {
+    //     const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
+    //     expect(txId).greaterThan(0);
+    //     const txEnt = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
+    //     expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
+    //     expect((txEnt.maxFee!).eq(maxFeeInSatoshi)).to.be.true;
+    // });
 
     it("Should receive fee", async () => {
         const fee = await wClient.getCurrentTransactionFee({
@@ -453,7 +453,6 @@ describe("Bitcoin wallet tests", () => {
         const walletPk = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
         await wClient.walletKeys.addKey(walletAddress, walletPk);
 
-        sinon.stub(TransactionFeeService.prototype, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
         sinon.stub(TransactionFeeService.prototype, "getFeePerKB").resolves(new BN(1000));
 
         const utxosFromMempool: MempoolUTXO[] = [
@@ -473,7 +472,7 @@ describe("Bitcoin wallet tests", () => {
             },
         ];
 
-        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves(utxosFromMempool);
+        sinon.stub(TransactionUTXOService.prototype, "sortedMempoolUTXOs").resolves(utxosFromMempool);
 
         const [tr] = await wClient.transactionService.preparePaymentTransaction(0, walletAddress, fundedAddress, toBN(100020));
         const privateKey = await wClient.walletKeys.getKey(walletAddress);

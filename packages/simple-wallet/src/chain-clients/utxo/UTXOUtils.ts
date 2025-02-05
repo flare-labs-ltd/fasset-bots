@@ -3,19 +3,14 @@ import {
     BTC_DEFAULT_FEE_PER_KB, BTC_DOGE_DEC_PLACES,
     BTC_DUST_AMOUNT,
     BTC_LEDGER_CLOSE_TIME_MS,
-    BTC_MAINNET,
     BTC_MIN_ALLOWED_AMOUNT_TO_SEND,
     BTC_MIN_ALLOWED_FEE_PER_KB,
-    BTC_TESTNET,
     ChainType,
     DOGE_DEFAULT_FEE_PER_KB,
     DOGE_DUST_AMOUNT,
     DOGE_LEDGER_CLOSE_TIME_MS,
-    DOGE_MAINNET,
-    DOGE_MAX_ALLOWED_FEE_PER_KB,
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
     DOGE_MIN_ALLOWED_FEE_PER_KB,
-    DOGE_TESTNET,
     TEST_BTC_DEFAULT_FEE_PER_KB,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
@@ -32,6 +27,7 @@ import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
 import {TransactionInputEntity} from "../../entity/transactionInput";
 import {fetchTransactionEntityById} from "../../db/dbutils";
 import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
+import { TransactionData } from "../../interfaces/IWalletTransaction";
 
 /*
  * COMMON UTILS
@@ -44,15 +40,6 @@ export function getDefaultBlockTimeInSeconds(chainType: ChainType): number {
         return BTC_LEDGER_CLOSE_TIME_MS / 1000;
     }
 }
-
-export function getMinAmountToSend(chainType: ChainType): BN {
-    if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-        return DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;
-    } else {
-        return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
-    }
-}
-
 
 /* istanbul ignore next */
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
@@ -79,13 +66,6 @@ export function getDustAmount(chainType: ChainType): BN {
     } else {
         return BTC_DUST_AMOUNT;
     }
-}
-
-export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: string) {
-    if (amountInSatoshi == null && note) return 2; // destination and note
-    if (amountInSatoshi == null && !note) return 1; // destination
-    if (note) return 3; // destination, change (returned funds) and note
-    return 2; // destination and change
 }
 
 export async function getTransactionDescendants(em: EntityManager, txId: number): Promise<TransactionEntity[]> {
@@ -123,8 +103,8 @@ export async function getTransactionDescendants(em: EntityManager, txId: number)
 
 export async function getAccountBalance(blockchainAPI: UTXOBlockchainAPI, account: string): Promise<BN> {
     try {
-        const accountBalance = await blockchainAPI.getAccountBalance(account);
-        const mainAccountBalance = toBN(accountBalance.balance);
+        const balance = await blockchainAPI.getAccountBalance(account);
+        const mainAccountBalance = toBN(balance);
         return mainAccountBalance;
     } catch (error) /* istanbul ignore next */ {
         logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
@@ -140,30 +120,22 @@ export function getOutputSize(chainType: ChainType) {
     }
 }
 
-export function isEnoughUTXOs(utxos: MempoolUTXO[], amount: BN, fee?: BN): boolean {
+export function isEnoughUTXOs(utxos: MempoolUTXO[], txData: TransactionData): boolean {
     const disposableAmount = utxos.reduce((acc: BN, utxo: MempoolUTXO) => acc.add(utxo.value), new BN(0));
-    return disposableAmount
-        .sub(fee ?? new BN(0))
-        .sub(amount)
-        .gten(0);
-}
-
-export function getCurrentNetwork(chainType: ChainType) {
-    switch (chainType) {
-        case ChainType.BTC:
-            return BTC_MAINNET;
-        case ChainType.testBTC:
-            return BTC_TESTNET;
-        case ChainType.DOGE:
-            return DOGE_MAINNET;
-        case ChainType.testDOGE:
-            return DOGE_TESTNET;
-        default:
-            throw new Error(`Unsupported chain type ${chainType}`);
+    const enough = disposableAmount.sub(txData.fee ?? new BN(0)).sub(txData.amount).gten(0);
+    if (enough === true) {
+        return true;
+    } else {
+        logger.info(`Account ${txData.source} doesn't have enough UTXOs - Skipping selection.
+            Amount: ${txData.amount.toNumber()},
+            UTXO values: [${utxos.map(t => t.value.toNumber()).join(', ')}],
+            ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
+        );
+        return false;
     }
 }
 
-// as in attestaion
+// as in attestation
 export function getConfirmedAfter(chainType: ChainType): number {
     switch (chainType) {
         case ChainType.BTC:
@@ -195,23 +167,11 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
 }
 
 export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
-    if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
-        const minFee = DOGE_MIN_ALLOWED_FEE_PER_KB;
-        const maxFee = DOGE_MAX_ALLOWED_FEE_PER_KB;
-        if (feePerKB.lt(minFee)) {
-            return minFee;
-        } else if (feePerKB.gt(maxFee)) {
-            return maxFee;
-        } else {
-            return feePerKB;
-        }
+    const minAllowedFee = getMinimalAllowedFeePerKB(chainType);
+    if (feePerKB.lt(minAllowedFee)) {
+        return minAllowedFee;
     } else {
-        const minFee = BTC_MIN_ALLOWED_FEE_PER_KB;
-        if (feePerKB.lt(minFee)) {
-            return minFee;
-        } else {
-            return feePerKB;
-        }
+        return feePerKB;
     }
 }
 
@@ -229,24 +189,26 @@ export function getRelayFeePerKB(chainType: ChainType) {
     if (chainType === ChainType.BTC || chainType === ChainType.testBTC) {
         return toBN(1000);
     } else if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-        return toBNExp(1, BTC_DOGE_DEC_PLACES - 2); // The default minimum transaction fee for relay is set at 0.001 DOGE/kB: https://github.com/dogecoin/dogecoin/blob/master/doc/fee-recommendation.md
+        return toBNExp(0.001, BTC_DOGE_DEC_PLACES); // The default minimum transaction fee for relay is set at 0.001 DOGE/kB: https://github.com/dogecoin/dogecoin/blob/master/doc/fee-recommendation.md
     }
     throw Error(`getRelayFeePerKB executed for unknown chain: ${chainType}`);
 }
 
-export function getMinimumUTXOValue(chainType: ChainType) {
+export function getMinimumUsefulUTXOValue(chainType: ChainType) {
     switch (chainType) {
         case ChainType.BTC:
-            return toBN(50_000);
         case ChainType.testBTC:
-            return toBN(10_000);
+            return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
         case ChainType.DOGE:
-            return toBNExp(1, BTC_DOGE_DEC_PLACES);
         case ChainType.testDOGE:
-            return toBNExp(1, BTC_DOGE_DEC_PLACES);
+            return DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;
         default:
             throw new Error(`Unsupported chain type ${chainType}`);
     }
+}
+
+export function getMinimumAllowedUTXOValue(chainType: ChainType) {
+    return getDustAmount(chainType).muln(2);
 }
 
 export function calculateFeePerKBFromTransactionEntity(rbfTxId: number, txForReplacement?: TransactionEntity) : BN {
@@ -266,4 +228,23 @@ export function getMinimalAllowedFeePerKB(chainType: ChainType): BN {
     } else {
         return BTC_MIN_ALLOWED_FEE_PER_KB;
     }
+}
+
+// Rearranges and sorts UTXO arrays based on their total value's difference from the target amount; filtering out arrays that don't meet the target.
+export function rearrangeUTXOs(arraysToArrange: MempoolUTXO[][], orderByDesc: boolean, targetAmount: BN): MempoolUTXO[][] {
+    const arraysWithDiff = arraysToArrange.map((array) => {
+        const sum = array.reduce((sum, utxo) => sum.add(utxo.value), toBN(0));
+        const diff = sum.sub(targetAmount);
+        return { array, sum, diff };
+    });
+    const validArraysWithDiff = arraysWithDiff.filter(item => item.diff.gte(toBN(0)));
+    validArraysWithDiff.sort((a, b) => {
+        if (orderByDesc) {
+            return a.diff.lt(b.diff) ? -1 : 1
+        } else {
+            return a.diff.gt(b.diff) ? -1 : 1;
+        }
+    });
+
+    return validArraysWithDiff.map(item => (item.array));
 }

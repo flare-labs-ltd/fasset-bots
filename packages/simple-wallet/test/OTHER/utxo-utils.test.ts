@@ -26,13 +26,6 @@ describe("UTXO utils tests", () => {
         expect(utxoUtils.getOutputSize(ChainType.testBTC)).to.eq(UTXO_OUTPUT_SIZE_SEGWIT);
     });
 
-    it("Should estimate number of outputs", () => {
-        expect(utxoUtils.getEstimatedNumberOfOutputs(toBN(1), "note")).to.eq(3);
-        expect(utxoUtils.getEstimatedNumberOfOutputs(null)).to.eq(1);
-        expect(utxoUtils.getEstimatedNumberOfOutputs(null, "note")).to.eq(2);
-        expect(utxoUtils.getEstimatedNumberOfOutputs(toBN(1))).to.eq(2);
-    });
-
     it("Should get confirmed after", () => {
         expect(utxoUtils.getConfirmedAfter(ChainType.DOGE)).to.eq(60);
         expect(utxoUtils.getConfirmedAfter(ChainType.testDOGE)).to.eq(60);

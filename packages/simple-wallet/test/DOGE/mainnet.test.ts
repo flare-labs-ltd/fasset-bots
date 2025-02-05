@@ -57,7 +57,7 @@ describe("DOGE mainnet wallet tests", () => {
             ...DOGEMccConnectionInitial,
             em: testOrm.em,
             walletKeys: dbWalletKeys,
-            enoughConfirmations: enoughConfirmations,
+            stuckTransactionOptions: { enoughConfirmations: enoughConfirmations }
         };
         wClient = DOGE.initialize(DOGEMccConnection);
         monitor = await wClient.createMonitor();
@@ -126,4 +126,3 @@ describe("DOGE mainnet wallet tests", () => {
         expect(targetBalanceEnd.eqn(0)).to.be.true;
     });
 });
-

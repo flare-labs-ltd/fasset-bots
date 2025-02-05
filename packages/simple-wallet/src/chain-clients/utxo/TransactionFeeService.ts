@@ -1,11 +1,5 @@
 import {
-    BTC_LOW_FEE_PER_KB,
-    BTC_MID_FEE_PER_KB,
     ChainType,
-    DOGE_LOW_FEE_PER_KB,
-    DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB,
-    TEST_DOGE_LOW_FEE_PER_KB,
-    TEST_DOGE_MID_FEE_PER_KB,
     UTXO_INPUT_SIZE,
     UTXO_INPUT_SIZE_SEGWIT,
     UTXO_OUTPUT_SIZE,
@@ -23,10 +17,6 @@ import { errorMessage } from "../../utils/axios-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { IUtxoWalletServices } from "./IUtxoWalletServices";
-
-export enum FeeStatus {
-    LOW, MEDIUM, HIGH
-}
 
 export class TransactionFeeService {
     readonly services: IUtxoWalletServices;
@@ -102,31 +92,4 @@ export class TransactionFeeService {
         }
         return feeToCover;
     }
-
-    async getCurrentFeeStatus(feePerKb?: BN): Promise<FeeStatus> {
-        const fee = feePerKb ?? await this.getFeePerKB();
-        switch (this.chainType) {
-            case ChainType.DOGE:
-                return this.getFeeStatusForChain(fee, DOGE_LOW_FEE_PER_KB, DOGE_MID_FEE_PER_KB);
-            case ChainType.testDOGE:
-                return this.getFeeStatusForChain(fee, TEST_DOGE_LOW_FEE_PER_KB, TEST_DOGE_MID_FEE_PER_KB);
-            case ChainType.BTC:
-                return this.getFeeStatusForChain(fee, BTC_LOW_FEE_PER_KB, BTC_MID_FEE_PER_KB);
-            case ChainType.testBTC:
-                return this.getFeeStatusForChain(fee, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB);
-            default:
-                return FeeStatus.MEDIUM;
-        }
-    }
-
-    private getFeeStatusForChain(fee: BN, lowFee: BN, medium: BN): FeeStatus {
-        if (fee.lt(lowFee)) {
-            return FeeStatus.LOW;
-        } else if (fee.lt(medium)) {
-            return FeeStatus.MEDIUM;
-        } else {
-            return FeeStatus.HIGH;
-        }
-    }
-
 }

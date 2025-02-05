@@ -41,7 +41,10 @@
             "tokenDecimals": 8,
             "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/btc"],
             "walletUrls": ["https://blockbook-bitcoin-testnet.flare.network/api/v2"],
-            "priceChangeEmitter": "FtsoV2PriceStore"
+            "priceChangeEmitter": "FtsoV2PriceStore",
+            "stuckTransactionOptions": {
+                "desiredChangeValue": 0.0004
+            }
         },
         "FTestDOGE": {
             "chainId": "testDOGE",
@@ -50,7 +53,10 @@
             "tokenDecimals": 8,
             "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/doge"],
             "walletUrls": ["https://blockbook-dogecoin-testnet.flare.network/api/v2"],
-            "priceChangeEmitter": "FtsoV2PriceStore"
+            "priceChangeEmitter": "FtsoV2PriceStore",
+            "stuckTransactionOptions": {
+                "desiredChangeValue": 100
+            }
         }
     },
     "agentBotSettings": {

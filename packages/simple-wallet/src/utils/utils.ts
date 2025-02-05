@@ -1,20 +1,15 @@
 import {
    ChainType,
    DEFAULT_FEE_INCREASE,
-   DROPS_PER_XRP,
-   UTXO_INPUT_SIZE,
-   UTXO_INPUT_SIZE_SEGWIT,
-   UTXO_OUTPUT_SIZE,
-   UTXO_OUTPUT_SIZE_SEGWIT,
-   UTXO_OVERHEAD_SIZE, UTXO_OVERHEAD_SIZE_SEGWIT
-} from "./constants";
+   DROPS_PER_XRP} from "./constants";
 import { StuckTransaction } from "../interfaces/IWalletTransaction";
-import BN, { max, min } from "bn.js";
+import BN, {  } from "bn.js";
 import { toBN } from "./bnutils";
-import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
+import { getConfirmedAfter, getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
 import crypto from "crypto";
+import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -43,7 +38,7 @@ export function isValidHexString(maybeHexString: string) {
    return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
 }
 
-export function stuckTransactionConstants(chainType: ChainType): StuckTransaction {
+export function stuckTransactionConstants(chainType: ChainType): Required<Pick<StuckTransaction, 'blockOffset' | 'feeIncrease' | 'executionBlockOffset' | 'enoughConfirmations'>>{
    switch (chainType) {
       case ChainType.BTC:
       case ChainType.testBTC:
@@ -51,7 +46,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
             blockOffset: 12,//accepted in next x blocks
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 1,//do not submit if "one block" time left
-            enoughConfirmations: 6
+            enoughConfirmations: getConfirmedAfter(chainType)
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
@@ -59,14 +54,15 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
             blockOffset: 40,//accepted in next x blocks
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 3,//do not submit if "three blocks" time left
-            enoughConfirmations: 60
+            enoughConfirmations: getConfirmedAfter(chainType)
          };
       case ChainType.XRP:
       case ChainType.testXRP:
          return {
             blockOffset: 200,// cca 1.5 min
             feeIncrease: DEFAULT_FEE_INCREASE,
-            executionBlockOffset: 2
+            executionBlockOffset: 2,
+            enoughConfirmations: 1
          };
       default:
          throw new Error(`Constants not defined for chain type ${chainType}`);
@@ -166,23 +162,23 @@ export function fullStackTrace(error: Error, skipDepth: number = 0): string {
    return originalStack.trimEnd() + "\n" + filteredStackLines.join("\n");
 }
 
-export function estimateTxSize(chainType: ChainType, nInputs: number, nOutputs: number, note?: string) {
-   const noteSize = note ? Buffer.byteLength(note, 'utf8') : 0;
-   if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-      return nInputs * UTXO_INPUT_SIZE + nOutputs * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE + noteSize;
-   } else {
-      return nInputs * UTXO_INPUT_SIZE_SEGWIT + nOutputs * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT + noteSize;
+export function consoleLogListMempoolUTXOs(utxos: MempoolUTXO[][] | null) {
+   if (!utxos || utxos.length === 0) {
+      console.log("No UTXOs available.");
+      return;
    }
-}
 
-export function getOutputSize(chainType: ChainType) {
-   if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-      return 34;
-   } else {
-      return 31;
-   }
-}
+   console.log("Listing UTXOs:");
+   utxos.forEach((utxoGroup, groupIndex) => {
+      console.log(`\nUTXO Group #${groupIndex + 1}:`);
 
-export function between(num: BN, a: BN, b: BN) {
-   return num.gt(min(a, b)) && num.lt(max(a, b));
+      utxoGroup.forEach((utxo, utxoIndex) => {
+         console.log(`  UTXO ${utxoIndex + 1}:`);
+         console.log(`    - Transaction Hash: ${utxo.transactionHash}`);
+         console.log(`    - Position: ${utxo.position}`);
+         console.log(`    - Value: ${utxo.value.toString()}`);
+         console.log(`    - Script: ${utxo.script}`);
+         console.log(`    - Confirmed: ${utxo.confirmed}`);
+      });
+   });
 }

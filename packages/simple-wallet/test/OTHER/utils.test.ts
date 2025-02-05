@@ -10,10 +10,7 @@ import {
 } from "../../src/utils/utils";
 import {toBN, toNumber} from "../../src/utils/bnutils";
 import {ChainType, DEFAULT_RATE_LIMIT_OPTIONS} from "../../src/utils/constants";
-import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
-import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {getCurrentNetwork} from "../../src/chain-clients/utxo/UTXOUtils";
-import {BTC, createAxiosInstance} from "../../src";
+import {createAxiosInstance} from "../../src";
 import {FeeStatsResponse, UTXOBlockHeightResponse} from "../../src/interfaces/IBlockchainAPI";
 import fs from "fs";
 
@@ -26,21 +23,6 @@ const BTCMccConnectionTestInitial = {
 const invalidChainType = "0x494e56414c494400000000000000000000000000000000000000000000000000" as ChainType;
 
 describe("Util tests", () => {
-    it("Should fail if unsupported network", async () => {
-        const testOrm = await initializeTestMikroORM();
-        const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-        const BTCMccConnectionTest = {
-            ...BTCMccConnectionTestInitial,
-            em: testOrm.em,
-            walletKeys: unprotectedDBWalletKeys
-        };
-        const wClient = BTC.initialize(BTCMccConnectionTest);
-        wClient.chainType = invalidChainType;
-        const fn = () => {
-            return getCurrentNetwork(wClient.chainType);
-        };
-        expect(fn).to.throw(Error);
-    });
 
     it("Should convert bytes as Buffer -> hex ", async function () {
         const expected0 = "000000";

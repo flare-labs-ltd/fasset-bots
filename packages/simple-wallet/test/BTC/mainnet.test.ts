@@ -52,7 +52,7 @@ describe("Bitcoin mainnet wallet tests", () => {
             ...BTCMccConnectionInitial,
             em: testOrm.em,
             walletKeys: dbWalletKeys,
-            enoughConfirmations: 2,
+            stuckTransactionOptions: { enoughConfirmations: 2 }
         };
         wClient = BTC.initialize(BTCMccConnection);
         monitor = await wClient.createMonitor();
@@ -122,4 +122,3 @@ describe("Bitcoin mainnet wallet tests", () => {
     });
 
 });
-

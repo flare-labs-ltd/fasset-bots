@@ -60,7 +60,7 @@ describe("UTXOWalletImplementation unit tests", () => {
             ...BTCMccConnectionTestInitial,
             em: em,
             walletKeys: unprotectedDBWalletKeys,
-            enoughConfirmations: 2
+            stuckTransactionOptions: { enoughConfirmations: 2 }
         };
         wClient = BTC.initialize(BTCMccConnectionTest);
 
@@ -95,7 +95,7 @@ describe("UTXOWalletImplementation unit tests", () => {
                 console.info("SignAndSubmit stub");
             }
         );
-        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves([
+        sinon.stub(TransactionUTXOService.prototype, "sortedMempoolUTXOs").resolves([
             createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -147,7 +147,7 @@ describe("UTXOWalletImplementation unit tests", () => {
 
     it("Transaction with fee too high for fee wallet and main wallet should eventually fail 2", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
-        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi.muln(2), true, toBN(1000), toBN(100));
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi.muln(2), toBN(1000), undefined, toBN(100));
         expect(tr.getFee()).to.be.eq(100);
     });
 });

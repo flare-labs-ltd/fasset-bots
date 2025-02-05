@@ -100,7 +100,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         const fAssets: Map<string, BotFAssetConfig> = new Map();
         for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
             const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, configFile.agentBotSettings,
-                orm?.em, configFile.dataAccessLayerUrls, submitter, configFile.walletOptions);
+                orm?.em, configFile.dataAccessLayerUrls, submitter);
             fAssets.set(symbol, fassetConfig);
         }
         const result: BotConfig = {
@@ -162,7 +162,6 @@ export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs:
  * @param em entity manager
  * @param dataAccessLayerUrls list of attestation provider's urls
  * @param submitter address from which the transactions get submitted
- * @param walletOptions
  * @returns instance of BotFAssetConfig
  */
 export async function createBotFAssetConfig(
@@ -175,7 +174,6 @@ export async function createBotFAssetConfig(
     em: EM | undefined,
     dataAccessLayerUrls: string[] | undefined,
     submitter: string | undefined,
-    walletOptions?: StuckTransaction,
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
@@ -188,7 +186,7 @@ export async function createBotFAssetConfig(
     };
     if (type === "agent" || type === "user") {
         assertCmd(fassetInfo.walletUrls != null && fassetInfo.walletUrls.length > 0, `At least one walletUrl in FAsset type ${fAssetSymbol} is required`);
-        result.wallet = await createBlockchainWalletHelper(secrets, chainId, requireNotNull(em), fassetInfo.walletUrls, walletOptions);
+        result.wallet = await createBlockchainWalletHelper(secrets, chainId, requireNotNull(em), fassetInfo.walletUrls, fassetInfo.stuckTransactionOptions);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);

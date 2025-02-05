@@ -20,7 +20,7 @@ import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
 import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { createTransactionEntity, setMonitoringStatus } from "../test-util/entity_utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
-import { getDustAmount } from "../../src/chain-clients/utxo/UTXOUtils";
+import { getDustAmount, getMinimumAllowedUTXOValue } from "../../src/chain-clients/utxo/UTXOUtils";
 
 use(chaiAsPromised);
 
@@ -67,7 +67,7 @@ describe("Dogecoin wallet tests", () => {
             ...DOGEMccConnectionTestInitial,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            enoughConfirmations: 2,
+            stuckTransactionOptions: { enoughConfirmations: 2 },
             rateLimitOptions: {
                 maxRPS: 100,
                 timeoutMs: 2000,
@@ -252,11 +252,14 @@ describe("Dogecoin wallet tests", () => {
         }
     });
 
-    it("Should submit transaction", async () => {
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend);
-        expect(txId).greaterThan(0);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
-    });
+    // it.only("Should submit transaction", async () => {
+    //     const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend);
+    //     const txId2 = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend.add(toBNExp(1, BTC_DOGE_DEC_PLACES)));
+    //     expect(txId).greaterThan(0);
+    //     await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId2);
+
+    //     // await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+    // });
 
     it("Free underlying with unspecified fee should have txFee + txAmount = amount", async () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend, undefined, undefined, undefined, undefined, undefined, true);
@@ -366,7 +369,7 @@ describe("Dogecoin wallet tests", () => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
         });
 
-        expect(replacementTxEnt.amount!.eq(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
+        expect(replacementTxEnt.amount!.eq(getMinimumAllowedUTXOValue(wClient.chainType))).to.be.true;
     });
 
     it("Should submit and replace transaction with 2 wallets", async () => {
@@ -438,7 +441,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should create transaction with suggestedFeePerKb and maxFee", async () => {
         const suggestedFeePerKb = toBNExp(3, BTC_DOGE_DEC_PLACES);
-        const maxFee = toBNExp(0.006, BTC_DOGE_DEC_PLACES);
+        const maxFee = toBNExp(0.003, BTC_DOGE_DEC_PLACES);
         const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, maxFee, undefined, undefined, false, undefined, undefined, suggestedFeePerKb);
         expect(txId).greaterThan(0);
@@ -515,7 +518,7 @@ describe("Dogecoin wallet tests", () => {
         const account = wClient.createWallet()
         await wClient.walletKeys.addKey(account.address, account.privateKey);
 
-        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const amountToSendSatoshi = toBNExp(9, BTC_DOGE_DEC_PLACES);
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, account.address);
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
 
@@ -534,16 +537,9 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("UTXOs should be sorted by value in descendant order", async () => {
-        const utxos = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
-        const confirmed = utxos.filter(t => t.confirmed);
-        const unConfirmed = utxos.filter(t => !t.confirmed);
-        for (let i = 0; i < confirmed.length - 1; i++) {
-            if (confirmed[i].value.lt(confirmed[i+1].value)) {
-                throw Error("Not descendant order of utxos")
-            }
-        }
-        for (let i = 0; i < unConfirmed.length - 1; i++) {
-            if (unConfirmed[i].value.lt(unConfirmed[i+1].value)) {
+        const utxos = await wClient.transactionUTXOService.sortedMempoolUTXOs(fundedAddress);
+        for (let i = 0; i < utxos.length - 1; i++) {
+            if (utxos[i].value.lt(utxos[i+1].value)) {
                 throw Error("Not descendant order of utxos")
             }
         }

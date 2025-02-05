@@ -12,8 +12,6 @@ export const MONITOR_LOOP_SLEEP = 2000; // 2s
 export const RESTART_IN_DUE_NO_RESPONSE = 20000; // 20s
 export const RANDOM_SLEEP_MS_MAX = 500;
 
-export const BTC_PER_SATOSHI = 1 / 100000000;
-
 export const XRP_PENDING_TIMEOUT = 30;// 30s
 export const MEMPOOL_WAITING_TIME = 15;// 15s
 export const MEMPOOL_CHAIN_LENGTH_LIMIT = 25;
@@ -108,7 +106,7 @@ export const BTC_DUST_AMOUNT = toBNExp(0.00000546, BTC_DOGE_DEC_PLACES);
 export const DELETE_ACCOUNT_OFFSET = 256;
 
 // https://bitcoinops.org/en/tools/calc-size/
-export const UTXO_INPUT_SIZE = 134; //148?
+export const UTXO_INPUT_SIZE = 148;
 export const UTXO_OUTPUT_SIZE = 34;
 export const UTXO_OVERHEAD_SIZE = 10;
 
@@ -122,27 +120,13 @@ export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.00012, BTC_DOGE_DEC_PLACES); // 
 // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
 export const DOGE_DEFAULT_FEE_PER_KB = toBNExp(0.5, BTC_DOGE_DEC_PLACES); //0.5 doge/kb
 
-export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
-export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES);
+export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0005, BTC_DOGE_DEC_PLACES); // 50k sats
+export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.5, BTC_DOGE_DEC_PLACES);
 
 export const BTC_MIN_ALLOWED_FEE_PER_KB = toBN(3000); //3000 sats/kb
 export const DOGE_MIN_ALLOWED_FEE_PER_KB = toBNExp(0.3, BTC_DOGE_DEC_PLACES); //0.3 doge/kb
 export const DOGE_MAX_ALLOWED_FEE_PER_KB = toBNExp(0.8, BTC_DOGE_DEC_PLACES); //0.8 doge/kb
 
-// Derived from https://test.jochen-hoenicke.de/queue/ and https://mempool.space
-export const BTC_LOW_FEE_PER_KB = toBN(10 * 1000); // 10 sat/vB
-export const BTC_MID_FEE_PER_KB = toBN(60 * 1000); // 60 sat/vB
-
-export const TEST_BTC_LOW_FEE_PER_KB = toBN(10 * 1000);
-export const TEST_BTC_MID_FEE_PER_KB = toBN(60 * 1000);
-
-export const DOGE_LOW_FEE_PER_KB = toBN(5000 * 1000);    // 0,05 DOGE/kB
-export const DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);  // 0,5 DOGE/kB
-
-export const TEST_DOGE_LOW_FEE_PER_KB = toBN(5000 * 1000);
-export const TEST_DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);
-
-export const RBF_AMOUNT_FACTOR = toBN(4);
 
 //////////////////////
 export const DROPS_PER_XRP = 1000000.0;

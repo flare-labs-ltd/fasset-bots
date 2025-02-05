@@ -65,7 +65,7 @@ describe("XRP mainnet wallet tests", () => {
             ...XRPConnectionInitial,
             em: testOrm.em,
             walletKeys: dbWalletKeys,
-            enoughConfirmations: enoughConfirmations,
+            stuckTransactionOptions: { enoughConfirmations: enoughConfirmations },
             apiTokenKeys: [apiKey]
         };
         wClient = XRP.initialize(conn);
@@ -202,4 +202,3 @@ describe("XRP mainnet wallet tests", () => {
     });
 
 });
-

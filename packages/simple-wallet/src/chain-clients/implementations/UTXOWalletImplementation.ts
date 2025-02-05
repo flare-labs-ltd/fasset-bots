@@ -1,13 +1,12 @@
 import axios, { AxiosError } from "axios";
 import * as bitcore from "bitcore-lib";
 import {
-    checkIfFeeTooHigh,
     checkIfShouldStillSubmit, createMonitoringId, getCurrentTimestampInSeconds,
     sleepMs,
     stuckTransactionConstants
 } from "../../utils/utils";
-import { toBN } from "../../utils/bnutils";
-import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME, UNKNOWN_DESTINATION, UNKNOWN_SOURCE } from "../../utils/constants";
+import { toBN, toBNExp } from "../../utils/bnutils";
+import { BTC_DOGE_DEC_PLACES, ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME, UNKNOWN_DESTINATION, UNKNOWN_SOURCE } from "../../utils/constants";
 import {
     BaseWalletConfig,
     ITransactionMonitor,
@@ -38,7 +37,8 @@ import { EntityManager } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
     getAccountBalance, getCore,
-    getMinAmountToSend,
+    getMinimumAllowedUTXOValue,
+    getMinimumUsefulUTXOValue,
     getTransactionDescendants,
 } from "../utxo/UTXOUtils";
 import { CreateWalletOverrides, IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
@@ -49,9 +49,10 @@ import {
     errorMessage,
     isORMError,
     LessThanDustAmountError,
-    MissingAmountError,
+    MissingFieldError,
     NegativeFeeError,
     NotEnoughUTXOsError,
+    RBFRestrictionsNotMetError,
 } from "../../utils/axios-utils";
 import { AxiosTransactionSubmissionError, UTXORawTransaction } from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
@@ -80,19 +81,21 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.createConfig = createConfig;
         this.inTestnet = createConfig.inTestnet ?? false;
         const resubmit = stuckTransactionConstants(this.chainType);
+        const desiredChangeValueInSmallestUnit = createConfig.stuckTransactionOptions?.desiredChangeValue ? toBNExp(createConfig.stuckTransactionOptions?.desiredChangeValue, BTC_DOGE_DEC_PLACES) : getMinimumUsefulUTXOValue(this.chainType);
 
-        this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
+        this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset;
 
-        this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
-        this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
+        this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease;
+        this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset;
         this.rootEm = overrides.walletEm ?? createConfig.em;
         this.walletKeys = createConfig.walletKeys;
-        this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
+        this.enoughConfirmations = createConfig.stuckTransactionOptions?.enoughConfirmations ?? resubmit.enoughConfirmations;
 
         this.blockchainAPI = new UTXOBlockchainAPI(createConfig, this.chainType);
         this.transactionFeeService = new TransactionFeeService(this, this.chainType, this.feeIncrease);
         this.transactionUTXOService = new TransactionUTXOService(this, this.chainType, this.enoughConfirmations);
-        this.transactionService = new TransactionService(this, this.chainType);
+
+        this.transactionService = new TransactionService(this, this.chainType, desiredChangeValueInSmallestUnit);
         this.feeService = overrides.feeService ?? new BlockchainFeeService(this.rootEm, this.blockchainAPI, this.chainType, this.monitoringId);
     }
 
@@ -280,9 +283,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 return;
             }
 
+            const privateKey = await this.walletKeys.getKey(txEnt.source);
+            const privateKeyForFee = txEnt.feeSource && await this.walletKeys.getKey(txEnt.feeSource) ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
+
             // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
-            let [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
+            const [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
                 txEnt.id,
                 txEnt.source,
                 txEnt.destination,
@@ -290,89 +296,56 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.fee,
                 txEnt.reference,
                 rbfReplacementFor,
-                txEnt.feeSource,
+                privateKeyForFee ? txEnt.feeSource : undefined, // use main if feeSource does not have private key
                 txEnt.isFreeUnderlyingTransaction,
                 txEnt.minFeePerKB,
                 txEnt.maxFee,
-                txEnt.maxPaymentForFeeSource
+                privateKeyForFee ? txEnt.maxPaymentForFeeSource : undefined // use main if feeSource does not have private key
             );
-            const privateKey = await this.walletKeys.getKey(txEnt.source);
-            const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
 
             /* istanbul ignore next */
-            if (!privateKey || txEnt.feeSource && !privateKeyForFee) {
+            if (!privateKey) {
                 await handleMissingPrivateKey(this.rootEm, txEnt.id, "prepareAndSubmitCreatedTransaction");
                 return;
             }
 
-            const feeToHighForMainSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null);
-            const feeToHighForFeeSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxPaymentForFeeSource ?? null);
+            const utxoToTxMap = await this.transactionUTXOService.getUTXOToTransactionMap(dbUTXOs, txEnt.id);
+            await transactional(this.rootEm, async (em) => {
+                const txEntToUpdate = await fetchTransactionEntityById(em, txEnt.id);
+                const inputs = await this.transactionUTXOService.createInputsFromUTXOs(em, dbUTXOs, utxoToTxMap);
 
-            if (txEnt.fee && feeToHighForMainSource) {
-                await failTransaction(this.rootEm, txEnt.id, `Pre-set fee ${txEnt.fee} > max fee ${txEnt.maxFee}`);
-                return;
-            }
+                txEntToUpdate.raw = JSON.stringify(transaction);
+                txEntToUpdate.status = TransactionStatus.TX_PREPARED;
+                txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
+                txEntToUpdate.fee = toBN(transaction.getFee()); // set the new fee if the original one was null/wrong
+                txEntToUpdate.inputs.add(inputs);
+                txEntToUpdate.numberOfOutputs = transaction.outputs.length;
+            });
 
-            let payingFeesFromFeeSource = !!txEnt.feeSource && !feeToHighForFeeSource;
-            if (txEnt.feeSource && feeToHighForFeeSource && !feeToHighForMainSource) {
-                // If amount to pay from fee source is too high - try to pay it from main source
-                [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
-                    txEnt.id,
-                    txEnt.source,
-                    txEnt.destination,
-                    txEnt.amount ?? null,
-                    txEnt.fee,
-                    txEnt.reference,
-                    rbfReplacementFor,
-                    undefined,
-                    txEnt.isFreeUnderlyingTransaction,
-                    txEnt.minFeePerKB,
-                    txEnt.maxFee
-                );
-                logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxPaymentForFeeSource})`);
-                payingFeesFromFeeSource = false;
-            }
-
-            // If fee source is non-existent/doesn't have high enough max amount
-            if (!payingFeesFromFeeSource && feeToHighForMainSource) {
-                await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
-                    txEntToUpdate.lastProcessingError = `Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`;
-                });
-                logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
-                return;
-            } else {
-                const utxoToTxMap = await this.transactionUTXOService.getUTXOToTransactionMap(dbUTXOs, txEnt.id);
-                await transactional(this.rootEm, async (em) => {
-                    const txEntToUpdate = await fetchTransactionEntityById(em, txEnt.id);
-                    const inputs = await this.transactionUTXOService.createInputsFromUTXOs(em, dbUTXOs, utxoToTxMap);
-
-                    txEntToUpdate.raw = JSON.stringify(transaction);
-                    txEntToUpdate.status = TransactionStatus.TX_PREPARED;
-                    txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
-                    txEntToUpdate.fee = toBN(transaction.getFee()); // set the new fee if the original one was null/wrong
-                    txEntToUpdate.inputs.add(inputs);
-                    txEntToUpdate.numberOfOutputs = transaction.outputs.length;
-                });
-
-                logger.info(`Transaction ${txEnt.id} prepared.`);
-                await this.signAndSubmitProcess(txEnt.id, transaction, privateKey, privateKeyForFee);
-            }
+            logger.info(`Transaction ${txEnt.id} prepared.`);
+            await this.signAndSubmitProcess(txEnt.id, transaction, privateKey, privateKeyForFee);
         } catch (error) {
             /* istanbul ignore next */
             {
                 if (error instanceof NotEnoughUTXOsError) {
-                    logger.warn(`Not enough UTXOs for transaction ${txEnt.id}, fetching them from mempool`);
+                    logger.warn(`prepareAndSubmitCreatedTransaction: transaction ${txEnt.id} cannot be prepared with: ${errorMessage(error)}`)
                     // try to prepare again
                 } else if (error instanceof LessThanDustAmountError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
                 } else if (error instanceof NegativeFeeError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
-                } else if (error instanceof MissingAmountError) {
+                } else if (error instanceof MissingFieldError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
+                } else if (error instanceof RBFRestrictionsNotMetError && txEnt.rbfReplacementFor?.id) {
+                        await failTransaction(this.rootEm, txEnt.id, error.message); // fail rbf
+                        await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => { // original to submitted
+                            txEnt.status = TransactionStatus.TX_SUBMITTED;
+                        });
+                        logger.info(`Transaction ${txEnt.rbfReplacementFor.id} changed status to submitted due RBFRestrictionsNotMetError.`);
                 } else if (axios.isAxiosError(error)) {
                     const axiosError = error as AxiosError<AxiosTransactionSubmissionError>;
+                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with: ${JSON.stringify(axiosError.response?.data)}`);
 
-                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with: ${String(axiosError.response?.data)}`);
                     if (axiosError.response?.data.error.includes("not found")) {
                         await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
                             txEnt.status = TransactionStatus.TX_CREATED;
@@ -412,7 +385,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
                 // If account has too many UTXOs for one big delete account transaction we sequentially remove the remainder of UTXOs
                 if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && txEnt.amount == null) {
-                    const UTXOsLeft = await this.transactionUTXOService.filteredAndSortedMempoolUTXOs(txEnt.source)
+                    const UTXOsLeft = await this.transactionUTXOService.sortedMempoolUTXOs(txEnt.source)
                     if (UTXOsLeft.length > 0) {
                         await this.transactionService.createDeleteAccountTransaction(this.chainType, txEnt.source, txEnt.destination);
                     }
@@ -420,7 +393,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
             if (txResp.blockHash && txResp.confirmations >= this.enoughConfirmations) {
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
-                    txEntToUpdate.confirmations = txResp.confirmations;
                     txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
                     txEntToUpdate.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
                 });
@@ -510,10 +482,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             return;
         }
 
-        if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
+        if ((this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) && txEnt.raw) {
             logger.info(`checkSubmittedTransaction transaction ${txEnt.id} is being checked for malleability.`);
             // Handle the case that transaction hash changes (transaction malleability for non-segwit transactions)
-            const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
+            const tr = JSON.parse(txEnt.raw) as UTXORawTransaction;
             const newHash = await this.blockchainAPI.findTransactionHashWithInputs(txEnt.source, tr.inputs, txEnt.submittedInBlock);
 
             // If transaction's hash has changed - set all descendants to be reset
@@ -534,6 +506,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else {
                 logger.warn(`checkSubmittedTransaction transaction ${txEnt.id} not found.`);
             }
+        } else if ((this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) && !txEnt.raw) {
+            logger.warn(`checkSubmittedTransaction cannot check for malleable transaction ${txEnt.id} due to undefied 'txEnt.raw'.`);
         }
     }
 
@@ -630,7 +604,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         // send less as in original tx (as time for payment passed) or "delete transaction" amount
         let newValue: BN | null = null;
         if (oldTx.amount != null) {
-            newValue = oldTx.isFreeUnderlyingTransaction ? oldTx.amount : getMinAmountToSend(this.chainType);
+            newValue = oldTx.isFreeUnderlyingTransaction ? oldTx.amount : getMinimumAllowedUTXOValue(this.chainType);
         }
         const totalFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)).add(oldTx.fee!); // covering conflicting txs
         logger.info(`Descendants fee ${totalFee.sub(oldTx.fee!).toNumber()}, oldTx fee ${oldTx.fee}, total fee ${totalFee}`);
@@ -725,8 +699,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     private async waitForTransactionToAppearInMempool(txId: number): Promise<void> {
         logger.info(`Transaction ${txId} is waiting to be accepted in mempool.`);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-        const start = txEnt.reachedStatusPendingInTimestamp!;
-        while (toBN(getCurrentTimestampInSeconds()).sub(start).ltn(MEMPOOL_WAITING_TIME)) {
+        const start = getCurrentTimestampInSeconds();
+        const end = start + MEMPOOL_WAITING_TIME;
+        while (getCurrentTimestampInSeconds() < end) {
             try {
                 const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
                 /* ignore else */

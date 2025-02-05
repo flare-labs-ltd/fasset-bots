@@ -173,7 +173,6 @@
                 }
             },
             "required": [
-                "apiKey",
                 "apiUrl"
             ],
             "type": "object"
@@ -500,6 +499,9 @@
                 "blockOffset": {
                     "type": "number"
                 },
+                "desiredChangeValue": {
+                    "type": "number"
+                },
                 "enoughConfirmations": {
                     "type": "number"
                 },
@@ -570,21 +572,6 @@
         },
         "rpcUrl": {
             "type": "string"
-        },
-        "walletOptions": {
-            "additionalProperties": false,
-            "properties": {
-                "blockOffset": {
-                    "type": "number"
-                },
-                "feeIncrease": {
-                    "type": "number"
-                },
-                "retries": {
-                    "type": "number"
-                }
-            },
-            "type": "object"
         }
     },
     "required": [
