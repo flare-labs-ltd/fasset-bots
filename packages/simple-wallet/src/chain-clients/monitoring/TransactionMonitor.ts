@@ -281,7 +281,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         processFunction: (txEnt: TransactionEntity) => Promise<void>
     ): Promise<void> {
         await this.checkIfMonitoringStopped(threadEm);
-        const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
+        const transactionEntities = await fetchTransactionEntities(threadEm, this.chainType, statuses);
         logger.info(`Processing ${transactionEntities.length} transactions with statuses: ${statuses}`);
         for (const txEnt of transactionEntities) {
             await this.checkIfMonitoringStopped(threadEm);

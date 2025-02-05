@@ -12,9 +12,7 @@ import { addConsoleTransportForTests, waitForTxToFinishWithStatus } from "../tes
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 import sinon from "sinon";
 import { updateTransactionEntity } from "../../src/db/dbutils";
-import {
-    createUTXO
-} from "../test-util/entity_utils";
+import { createUTXO } from "../test-util/entity_utils";
 import { toBN } from "web3-utils";
 import BN from "bn.js";
 import * as bitcore from "bitcore-lib";
@@ -53,7 +51,7 @@ describe("UTXOWalletImplementation unit tests", () => {
 
     before(async () => {
         removeConsoleLogging = addConsoleTransportForTests(logger);
-        testOrm = await initializeTestMikroORM({...config, dbName: "unit-test-db"});
+        testOrm = await initializeTestMikroORM({...config, dbName: "unit-test-db", debug: true});
         const em = testOrm.em;
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(em);
         BTCMccConnectionTest = {
@@ -150,4 +148,5 @@ describe("UTXOWalletImplementation unit tests", () => {
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi.muln(2), toBN(1000), undefined, toBN(100));
         expect(tr.getFee()).to.be.eq(100);
     });
+
 });
