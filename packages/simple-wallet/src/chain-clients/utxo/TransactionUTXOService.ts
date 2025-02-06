@@ -142,12 +142,10 @@ export class TransactionUTXOService {
         const amountToSendWithoutChange = amountToCover.add(getMinimumUsefulUTXOValue(this.chainType));
 
         for (const utxo of utxos) {
-            console.log(utxo.transactionHash, utxo.position, utxo.value.toString())
             if (utxo.value.gte(amountToSendWithChange)) { // find smallest where amountToSent + change >= utxo.value
                 bestUtxoWithChange = [utxo];
             }
             if (utxo.value.gte(amountToSendWithoutChange) && utxo.value.lt(amountToSendWithChange) && (bestUtxoWithoutChange.length === 0 || bestUtxoWithoutChange[0].value.lt(utxo.value))) { // find smallest where amountToSent >= utxo.value && amountToSent < amountToSendWithChange
-                console.log("----!!!!!!!----", utxo.value.toString())
                     bestUtxoWithoutChange = [utxo];
             }
             if (utxo.value.lte(amountToCover)) { // using utxo <= amount
