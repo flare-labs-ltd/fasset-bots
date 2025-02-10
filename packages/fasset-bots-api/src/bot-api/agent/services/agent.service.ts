@@ -837,4 +837,16 @@ export class AgentService {
         }
         return {balance: balanceFormatted, symbol: cli.context.chainInfo.symbol};
     }
+
+    async getOwnerFassetBalance(fAssetSymbol: string): Promise<AllBalances> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        // amount to mint
+        const ownerAddress = this.secrets.optional(`owner.native.address`);
+        let balanceFormatted = "0";
+        if (ownerAddress) {
+            const fassetBalance = await cli.context.fAsset.balanceOf(ownerAddress);
+            balanceFormatted = formatFixed(toBN(fassetBalance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        }
+        return {balance: balanceFormatted, symbol: cli.context.fAssetSymbol};
+    }
 }
