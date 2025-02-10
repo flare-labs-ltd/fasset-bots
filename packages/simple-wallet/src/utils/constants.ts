@@ -120,7 +120,7 @@ export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.00012, BTC_DOGE_DEC_PLACES); // 
 // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
 export const DOGE_DEFAULT_FEE_PER_KB = toBNExp(0.5, BTC_DOGE_DEC_PLACES); //0.5 doge/kb
 
-export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0005, BTC_DOGE_DEC_PLACES); // 50k sats
+export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
 export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.5, BTC_DOGE_DEC_PLACES);
 
 export const BTC_MIN_ALLOWED_FEE_PER_KB = toBN(3000); //3000 sats/kb
