@@ -90,8 +90,8 @@
                 "feeSafetyFactorPerKB": 0
             },
             "FTestBTC": {
-                "recommendedOwnerBalance": "0.5",
-                "minimumFreeUnderlyingBalance": "0.01",
+                "recommendedOwnerBalance": "0.01",
+                "minimumFreeUnderlyingBalance": "0.001",
                 "feeSafetyFactorPerKB": 1
             },
             "FTestDOGE": {
