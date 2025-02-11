@@ -118,7 +118,7 @@ export function isContractChangedEvent(context: IAssetNativeChainContext, event:
 
 export function maxFeeMultiplier(chainId: ChainId): number {
     if (chainId === ChainId.testBTC) {
-        return 100;
+        return 1;
     } else if (chainId === ChainId.testDOGE) {
         return 10;
     } else {

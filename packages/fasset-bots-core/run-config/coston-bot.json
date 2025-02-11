@@ -43,7 +43,7 @@
             "walletUrls": ["https://blockbook-bitcoin-testnet4.flare.network/api/v2"],
             "priceChangeEmitter": "FtsoV2PriceStore",
             "stuckTransactionOptions": {
-                "desiredChangeValue": 0.0004
+                "desiredChangeValue": 0.001
             }
         },
         "FTestDOGE": {
@@ -90,8 +90,8 @@
                 "feeSafetyFactorPerKB": 0
             },
             "FTestBTC": {
-                "recommendedOwnerBalance": "2",
-                "minimumFreeUnderlyingBalance": "0.5",
+                "recommendedOwnerBalance": "0.5",
+                "minimumFreeUnderlyingBalance": "0.01",
                 "feeSafetyFactorPerKB": 1
             },
             "FTestDOGE": {
