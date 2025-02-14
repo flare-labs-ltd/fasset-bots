@@ -381,7 +381,12 @@ export class TransactionUTXOService {
                         numberOfOutputs: tr.vout.length ?? 0
                     } as RequiredEntityData<TransactionEntity>);
 
-                    const inputs = tr.vin.map((t: UTXOVinResponse) => createTransactionInputEntity(em, txEnt, t.txid, t.value, t.vout ?? 0, ""));
+                    const inputs: TransactionInputEntity[] = []
+                    for (const t of tr.vin) {
+                        if (t.txid && t.value && t.vout) {
+                            inputs.push(createTransactionInputEntity(em, txEnt, t.txid, t.value, t.vout, ""));
+                        }
+                    }
                     txEnt.inputs.add(inputs);
 
                     em.persist(txEnt);
