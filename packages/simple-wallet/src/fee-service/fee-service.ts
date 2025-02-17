@@ -80,7 +80,7 @@ export class BlockchainFeeService {
     checkEnoughTimestampHistory() {
         /* istanbul ignore if */
         if (!this.hasEnoughTimestampHistory()) {
-            logger.warn(`Cannot determine latest median time.\n${this.timestampHistory.logHistory()}`);
+            logger.warn(`Cannot determine latest median time. Current blockHeight is ${this.currentBlockHeight} \n${this.timestampHistory.logHistory()}`);
         }
     }
 

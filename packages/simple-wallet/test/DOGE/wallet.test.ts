@@ -448,7 +448,7 @@ describe("Dogecoin wallet tests", () => {
         });
     });
 
-    it.skip("Should create transaction with suggestedFeePerKb", async () => { // TODO
+    it.skip("Should create transaction with suggestedFeePerKb", async () => { // suggestedFeePerKb is applied, but it might a bit differ from actual suggestedFeePerKb
         const suggestedFeePerKb = toBNExp(5, BTC_DOGE_DEC_PLACES);
         const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, undefined, undefined, suggestedFeePerKb);

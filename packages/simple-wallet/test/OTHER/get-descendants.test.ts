@@ -28,7 +28,7 @@ describe("getTransactionDescendants", () => {
         await testOrm.close();
     });
 
-    it("should return an empty array when there are no descendants", async () => {
+    it("Should return an empty array when there are no descendants", async () => {
         const tx = createTransactionEntity("address1", "address2", "txHash1");
         await em.persistAndFlush(tx);
 
