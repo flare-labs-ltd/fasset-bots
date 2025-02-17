@@ -71,3 +71,5 @@ packages/fasset-bots-core/test/special/fast-minting-btc.ts
 packages/fasset-bots-core/test/special/btc_test_accounts.ts
 packages/fasset-bots-core/test/special/fast-minting-doge.ts
 packages/fasset-bots-core/test/special/doge_test_accounts.ts
+
+packages/simple-wallet/test/scripts
