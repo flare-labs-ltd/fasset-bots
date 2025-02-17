@@ -1,4 +1,5 @@
 import {
+    EstimateFeeResponse,
     FeeStatsResponse,
     IBlockchainAPI,
     MempoolUTXO,
@@ -7,7 +8,7 @@ import {
 } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import { WalletServiceConfigBase } from "../interfaces/IWalletTransaction";
-import { ChainType } from "../utils/constants";
+import { ChainType, DOGE_DEFAULT_FEE_PER_KB, SATS_PER_BTC_DOGE } from "../utils/constants";
 import BN from "bn.js";
 import { toBN } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
@@ -69,13 +70,29 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
         return this.lastGetCurrentBlockHeightResult;
     }
 
-    async getCurrentFeeRate(blockNumber?: number): Promise<number> { // in satoshies
+    async getCurrentFeeRate(blockNumber?: number): Promise<number> { // in sats per kb
         const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
         return await this.logRequest(`getCurrentFeeRate(${blockNumber})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<FeeStatsResponse>(`/feestats/${blockToCheck}`);
             const fee = res.data.averageFeePerKb;
             return fee;
         }, "getCurrentFeeRate"));
+    }
+
+    async getEstimateFee(inTheNextBlocks: number = 2): Promise<number> { // in sats per kb
+        return await this.logRequest(`getEstimateFee(${inTheNextBlocks})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
+            const res = await client.get<EstimateFeeResponse>(`/estimatefee/${inTheNextBlocks}`);
+            if (res.data.error) {
+                logger.error(`RPC Error: ${res.data.error.message} (Code: ${res.data.error.code})`);
+                return DOGE_DEFAULT_FEE_PER_KB.toNumber();
+            }
+            const fee = Number(res.data.result);
+            if (isNaN(fee)) {
+                logger.error(`Invalid fee estimate received: ${res.data.result}`);
+                return DOGE_DEFAULT_FEE_PER_KB.toNumber();
+            }
+            return Math.round(fee * SATS_PER_BTC_DOGE);
+        }, "getEstimateFee"));
     }
 
     async getBlockTimeAt(blockNumber: number): Promise<BN> {

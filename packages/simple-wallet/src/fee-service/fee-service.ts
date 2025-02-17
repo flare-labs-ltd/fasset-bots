@@ -36,6 +36,9 @@ export class BlockchainFeeService {
     }
 
     async getLatestFeeStats(): Promise<BN> {
+        if (this.chainType === ChainType.DOGE) { // due to inconsistent transaction distribution in DOGE, fee estimation is unreliable => using the estimateFee API instead
+            return toBN(await this.blockchainAPI.getEstimateFee());
+        }
         if (this.currentBlockHeight < 0) {
             const blockHeight = await this.getCurrentBlockHeight();
             if (blockHeight) {

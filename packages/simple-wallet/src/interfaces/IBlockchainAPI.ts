@@ -98,6 +98,17 @@ export interface UTXOVoutResponse {
     addresses: string[];
     spent?: boolean;
 }
+//https://github.com/trezor/blockbook/blob/f665eba5c6cd77e2c4a5c76f2cd02fe1577606b8/bchain/coins/dcr/decredrpc.go#L301
+export interface EstimateFeeResponse {
+    error?: RPCError;
+    result: string;
+}
+//https://github.com/trezor/blockbook/blob/f665eba5c6cd77e2c4a5c76f2cd02fe1577606b8/bchain/types.go#L218
+interface RPCError {
+    code: number;
+    message: string;
+}
+
 
 export interface UTXORawTransaction {
     hash: string;

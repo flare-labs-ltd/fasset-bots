@@ -158,11 +158,6 @@ describe("Dogecoin wallet tests", () => {
         expect(txEnt.status).to.eq(TransactionStatus.TX_SUBMITTED);
     });
 
-    it("Should create estimate fee", async () => {
-        const fee = await wClient.transactionFeeService.getEstimateFee(1, 3, toBNExp(1, BTC_DOGE_DEC_PLACES));
-        expect(fee.gtn(0));
-    });
-
     it("Should send multiple transactions", async () => {
         const amount = toBNExp(1, BTC_DOGE_DEC_PLACES);
 

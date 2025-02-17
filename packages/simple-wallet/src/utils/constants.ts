@@ -129,6 +129,7 @@ export const DOGE_MAX_ALLOWED_FEE_PER_KB = toBNExp(0.8, BTC_DOGE_DEC_PLACES); //
 
 
 //////////////////////
+export const SATS_PER_BTC_DOGE = 100_000_000;
 export const DROPS_PER_XRP = 1000000.0;
 // https://xrpl.org/docs/concepts/transactions/transaction-cost
 export const XRP_MINIMAL_FEE_DROPS = toBN(12);

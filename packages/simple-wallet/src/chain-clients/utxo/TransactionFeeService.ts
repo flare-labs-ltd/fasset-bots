@@ -49,28 +49,18 @@ export class TransactionFeeService {
         return await this.getCurrentFeeRate();
     }
 
-    async getEstimateFee(inputLength: number, outputLength = 2, feePerKb?: BN ): Promise<BN> {
-        let feePerKbToUse: BN;
-        if (feePerKb) {
-            feePerKbToUse = feePerKb;
-        } else {
-            feePerKbToUse =  await this.getFeePerKB();
-        }
-        const feePerb = feePerKbToUse.divn(1000);
-        if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-            return feePerb.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
-        } else {
-            return feePerb.muln(inputLength * UTXO_INPUT_SIZE_SEGWIT + outputLength * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT);
-        }
-    }
-
     private async getCurrentFeeRate(): Promise<BN> {
         try {
-            const fee = await this.blockchainAPI.getCurrentFeeRate();
+            let fee: number;
+            if (this.chainType === ChainType.DOGE) { // due to inconsistent transaction distribution in DOGE, avg and medium fee per block is unreliable => using the estimateFee API instead
+                fee = await this.blockchainAPI.getEstimateFee();
+            } else {
+                fee = await this.blockchainAPI.getCurrentFeeRate();
+            }
             if (fee === 0) {
                 return getDefaultFeePerKB(this.chainType);
             }
-            const rateInSatoshies = toBN(fee);
+            const rateInSatoshies = toBN(Math.round(fee));
             return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
         } catch (error) {
             logger.warn(`Cannot obtain fee rate ${errorMessage(error)}`);
