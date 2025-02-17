@@ -1,11 +1,5 @@
 import {
     ChainType,
-    UTXO_INPUT_SIZE,
-    UTXO_INPUT_SIZE_SEGWIT,
-    UTXO_OUTPUT_SIZE,
-    UTXO_OUTPUT_SIZE_SEGWIT,
-    UTXO_OVERHEAD_SIZE,
-    UTXO_OVERHEAD_SIZE_SEGWIT,
 } from "../../utils/constants";
 import BN from "bn.js";
 import { logger } from "../../utils/logger";
