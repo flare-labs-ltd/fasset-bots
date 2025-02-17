@@ -138,10 +138,18 @@ export class TransactionUTXOService {
         let totalSmallWithAlmostChange = toBN(0);
         let totalSmallWithoutChange = toBN(0);
 
-        const amountToSendWithChange = amountToCover.add(desiredChangeValue);
-        const amountToSendWithoutChange = amountToCover.add(getMinimumUsefulUTXOValue(this.chainType));
+        const amountToSendWithChange = amountToCover.add(desiredChangeValue); // amount to send with desired change
+        const amountToSendWithoutChange = amountToCover.add(getMinimumUsefulUTXOValue(this.chainType)); // amount to send without desired change
 
         for (const utxo of utxos) {
+            const numAncestors = await this.getNumberOfMempoolAncestors(utxo.transactionHash);
+            if (numAncestors + 1 >= MEMPOOL_CHAIN_LENGTH_LIMIT) {
+                logger.info(
+                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${MEMPOOL_CHAIN_LENGTH_LIMIT} for UTXO with hash ${utxo.transactionHash} and position ${utxo.position}`
+                );
+                continue; //skip this utxo
+            }
+
             if (utxo.value.gte(amountToSendWithChange)) { // find smallest where amountToSent + change >= utxo.value
                 bestUtxoWithChange = [utxo];
             }
