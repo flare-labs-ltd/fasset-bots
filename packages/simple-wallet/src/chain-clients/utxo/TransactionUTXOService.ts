@@ -14,9 +14,10 @@ import {
 } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
-import { toBN } from "../../utils/bnutils";
+import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
 import {
+    getCore,
     getDustAmount,
     getMinimumUsefulUTXOValue,
     isEnoughUTXOs,
@@ -29,8 +30,10 @@ import {
 } from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { IUtxoWalletServices } from "./IUtxoWalletServices";
-import { TransactionData } from "../../interfaces/IWalletTransaction";
-
+import { TransactionData, UTXO } from "../../interfaces/IWalletTransaction";
+import { unPrefix0x } from "../../utils/utils";
+import { Transaction } from "bitcore-lib";
+import UnspentOutput = Transaction.UnspentOutput;
 
 export class TransactionUTXOService {
     private readonly chainType: ChainType;
@@ -101,17 +104,17 @@ export class TransactionUTXOService {
     private async selectUTXOs(allUTXOs: MempoolUTXO[], txData: TransactionData): Promise<MempoolUTXO[][] | null> {
         // filter out dust inputs
         const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType)));
-
         if (!isEnoughUTXOs(allUTXOs, txData)) {
             return null;
         }
-
         let validChoices: MempoolUTXO[][] = [];
+        // confirmed utxos
         const confirmedUTXOs = validUTXOs.filter((utxo) => utxo.confirmed);
         const onlyConfirmed = await this.gatherUTXOS(confirmedUTXOs, txData);
         if (onlyConfirmed) {
             validChoices = [...onlyConfirmed];
         }
+         // confirmed and mempool utxos
         const confirmedAndMempool = await this.gatherUTXOS(validUTXOs, txData);
         if (confirmedAndMempool) {
             validChoices = [...confirmedAndMempool];
@@ -133,13 +136,26 @@ export class TransactionUTXOService {
         const smallUtxosWithChange: MempoolUTXO[] = []; // multiple utxos, where utxo.value <= amountToSent and sum(utxo.value) + change >= utxo.value
         const smallUtxosWithAlmostChange: MempoolUTXO[] = []; // multiple utxos, where utxo.value <= amountToSent and sum(utxo.value) + change >= utxo.value
         const smallUtxosWithoutChange: MempoolUTXO[] = []; // multiple utxos, where utxo.value <= amountToSent and sum(utxo.value) >= utxo.value
+        const utxosJustToCoverAmountAndFee: MempoolUTXO[] = [];
 
         let totalSmallWithChange = toBN(0);
         let totalSmallWithAlmostChange = toBN(0);
         let totalSmallWithoutChange = toBN(0);
+        let totalJustToCoverAmountAndFee = toBN(0);
 
         const amountToSendWithChange = amountToCover.add(desiredChangeValue); // amount to send with desired change
         const amountToSendWithoutChange = amountToCover.add(getMinimumUsefulUTXOValue(this.chainType)); // amount to send without desired change
+
+        let amountBestUtxo = amountToSendWithChange;
+        let amountBestUtxoWithoutChange = amountToSendWithoutChange;
+        let amountBestUtxoWithAdditionalToCreateChange = amountToSendWithChange;
+        let amountSmallUtxosWithChange = amountToSendWithChange;
+        let amountSmallUtxosWithAlmostChange = amountToSendWithoutChange;
+        let amountSmallUtxosWithoutChange = amountToSendWithoutChange;
+        let amountToSendJustToCover = amountToCover;
+
+        const validUTXOsWithChange: MempoolUTXO[][] = [];
+        const validUTXOsWithoutChange: MempoolUTXO[][] = [];
 
         for (const utxo of utxos) {
             const numAncestors = await this.getNumberOfMempoolAncestors(utxo.transactionHash);
@@ -149,40 +165,94 @@ export class TransactionUTXOService {
                 );
                 continue; //skip this utxo
             }
-
-            if (utxo.value.gte(amountToSendWithChange)) { // find smallest where amountToSent + change >= utxo.value
+            if (utxo.value.gte(amountBestUtxo)) { // find smallest where amountToSent + change >= utxo.value
                 bestUtxoWithChange = [utxo];
+                const toAdd = await this.checkIfItCoversFee(txData, bestUtxoWithChange, utxo.value);
+                if (toAdd) {
+                    amountBestUtxo = amountBestUtxo.add(toAdd);
+                    bestUtxoWithChange = [];
+                }
             }
-            if (utxo.value.gte(amountToSendWithoutChange) && utxo.value.lt(amountToSendWithChange) && (bestUtxoWithoutChange.length === 0 || bestUtxoWithoutChange[0].value.lt(utxo.value))) { // find smallest where amountToSent >= utxo.value && amountToSent < amountToSendWithChange
+            if (utxo.value.gte(amountBestUtxoWithoutChange) && utxo.value.lt(amountToSendWithChange) && (bestUtxoWithoutChange.length === 0 || bestUtxoWithoutChange[0].value.lt(utxo.value))) { // find smallest where amountToSent >= utxo.value && amountToSent < amountToSendWithChange
                     bestUtxoWithoutChange = [utxo];
+                    const toAdd = await this.checkIfItCoversFee(txData, bestUtxoWithoutChange, utxo.value);
+                    if (toAdd) {
+                        amountBestUtxoWithoutChange = amountBestUtxoWithoutChange.add(toAdd);
+                        bestUtxoWithoutChange = [];
+                    }
             }
             if (utxo.value.lte(amountToCover)) { // using utxo <= amount
-                if (totalSmallWithChange.lt(amountToSendWithChange)) { // with lot change
+                if (totalSmallWithChange.lt(amountSmallUtxosWithChange)) { // with lot change
                     totalSmallWithChange = totalSmallWithChange.add(utxo.value);
                     smallUtxosWithChange.push(utxo);
+                    const toAdd = await this.checkIfItCoversFee(txData, smallUtxosWithChange, totalSmallWithChange);
+                    if (toAdd) {
+                        amountSmallUtxosWithChange = amountSmallUtxosWithChange.add(toAdd);
+                    }
                 }
-                if (totalSmallWithoutChange.lt(amountToSendWithoutChange) && totalSmallWithoutChange.add(utxo.value).lt(amountToSendWithChange)) { // no lot change
+                if (totalSmallWithoutChange.lt(amountSmallUtxosWithoutChange) && totalSmallWithoutChange.add(utxo.value).lt(amountToSendWithChange)) { // no lot change
                     totalSmallWithoutChange = totalSmallWithoutChange.add(utxo.value);
                     smallUtxosWithoutChange.push(utxo);
+                    const toAdd = await this.checkIfItCoversFee(txData, smallUtxosWithoutChange, totalSmallWithoutChange);
+                    if (toAdd) {
+                        amountSmallUtxosWithoutChange = amountSmallUtxosWithoutChange.add(toAdd);
+                    }
                 }
-                if ((totalSmallWithAlmostChange.lt(amountToSendWithoutChange) && totalSmallWithAlmostChange.add(utxo.value).lt(amountToSendWithChange)) ||
-                    (totalSmallWithAlmostChange.add(utxo.value).gte(amountToSendWithoutChange) && totalSmallWithAlmostChange.add(utxo.value).lt(amountToSendWithChange))) { // almost lot change
+                if ((totalSmallWithAlmostChange.lt(amountSmallUtxosWithAlmostChange) && totalSmallWithAlmostChange.add(utxo.value).lt(amountToSendWithChange)) ||
+                    (totalSmallWithAlmostChange.add(utxo.value).gte(amountSmallUtxosWithAlmostChange) && totalSmallWithAlmostChange.add(utxo.value).lt(amountToSendWithChange))) { // almost lot change
                     totalSmallWithAlmostChange = totalSmallWithAlmostChange.add(utxo.value);
                     smallUtxosWithAlmostChange.push(utxo);
+                    const toAdd = await this.checkIfItCoversFee(txData, smallUtxosWithAlmostChange, totalSmallWithAlmostChange);
+                    if (toAdd) {
+                        amountSmallUtxosWithAlmostChange = amountSmallUtxosWithAlmostChange.add(toAdd);
+                    }
                 }
             }
             if (bestUtxoWithoutChange.length === 1 &&
-                (bestUtxoWithoutChange[0].transactionHash != utxo.transactionHash || bestUtxoWithoutChange[0].transactionHash == utxo.transactionHash && bestUtxoWithoutChange[0].position != utxo.position) &&
-                bestUtxoWithoutChange[0].value.add(utxo.value).gte(amountToSendWithChange)) {
+                (bestUtxoWithoutChange[0].transactionHash != utxo.transactionHash || bestUtxoWithoutChange[0].transactionHash == utxo.transactionHash && bestUtxoWithoutChange[0].position != utxo.position) && // do not use the same utxo
+                bestUtxoWithoutChange[0].value.add(utxo.value).gte(amountBestUtxoWithAdditionalToCreateChange)) {
                 bestUtxoWithAdditionalToCreateChange = [bestUtxoWithoutChange[0], utxo];
+                const toAdd = await this.checkIfItCoversFee(txData, bestUtxoWithAdditionalToCreateChange, bestUtxoWithoutChange[0].value.add(utxo.value));
+                if (toAdd) {
+                    amountBestUtxoWithAdditionalToCreateChange = amountBestUtxoWithAdditionalToCreateChange.add(toAdd);
+                    bestUtxoWithAdditionalToCreateChange = [];
+                }
+            }
+            if (totalJustToCoverAmountAndFee.lt(amountToSendJustToCover)) {
+                totalJustToCoverAmountAndFee = totalJustToCoverAmountAndFee.add(utxo.value);
+                utxosJustToCoverAmountAndFee.push(utxo);
+                const toAdd = await this.checkIfItCoversFee(txData, utxosJustToCoverAmountAndFee, totalJustToCoverAmountAndFee);
+                if (toAdd) {
+                    amountToSendJustToCover = amountToSendJustToCover.add(toAdd);
+                }
             }
         }
+        if (bestUtxoWithChange.length > 0) {
+            validUTXOsWithChange.push(bestUtxoWithChange);
+        }
+        if (bestUtxoWithoutChange.length > 0) {
+            validUTXOsWithoutChange.push(bestUtxoWithoutChange);
+        }
+        if (bestUtxoWithAdditionalToCreateChange.length > 0) {
+            validUTXOsWithChange.push(bestUtxoWithAdditionalToCreateChange);
+        }
+        if (smallUtxosWithChange.length > 0 && totalSmallWithChange.gte(amountSmallUtxosWithChange)) {
+            validUTXOsWithChange.push(smallUtxosWithChange);
+        }
+        if (smallUtxosWithAlmostChange.length > 0 && totalSmallWithAlmostChange.gte(amountSmallUtxosWithAlmostChange)) {
+            validUTXOsWithoutChange.push(smallUtxosWithAlmostChange);
+        }
+        if (smallUtxosWithoutChange.length > 0 && totalSmallWithoutChange.gte(amountSmallUtxosWithoutChange)) {
+            validUTXOsWithoutChange.push(smallUtxosWithoutChange);
+        }
 
-        const residualAmount = smallUtxosWithChange.reduce((sum, utxo) => sum.add(utxo.value), toBN(0)).sub(amountToCover);
-        const rearrangeUTXOsWithChangeBySmallestDiff = rearrangeUTXOs([bestUtxoWithChange, residualAmount.gte(desiredChangeValue) ? smallUtxosWithChange : [], bestUtxoWithAdditionalToCreateChange], true, amountToCover);
-        const rearrangeUTXOsNoChangeByHighestDiff = rearrangeUTXOs([bestUtxoWithoutChange, smallUtxosWithoutChange, smallUtxosWithAlmostChange], false, amountToCover);
+        const rearrangeUTXOsWithChangeBySmallestDiff = rearrangeUTXOs(validUTXOsWithChange, true, amountToCover);
+        const rearrangeUTXOsNoChangeByHighestDiff = rearrangeUTXOs(validUTXOsWithoutChange, false, amountToCover);
         const validChoices: MempoolUTXO[][] = [...rearrangeUTXOsWithChangeBySmallestDiff, ...rearrangeUTXOsNoChangeByHighestDiff];
 
+        if (utxosJustToCoverAmountAndFee.length > 0 && totalJustToCoverAmountAndFee.gte(amountToSendJustToCover)) {
+            validChoices.push(utxosJustToCoverAmountAndFee);
+        }
         return validChoices;
     }
 
@@ -389,5 +459,56 @@ export class TransactionUTXOService {
         }
         const endSize = Array.from(addressScriptMap.keys()).length;
         logger.info(`Removed ${startSize - endSize} UTXO scripts used by transactions that were accepted to blockchain for address ${source}; it currently has ${endSize} scripts stored`);
+    }
+
+    private async checkIfItCoversFee(txData: TransactionData, utxosToUse: MempoolUTXO[], utxosValue: BN): Promise<BN | null> {
+        if (!txData.fee) {
+            const tr = await this.createBitcoreTransaction(txData.source, txData.destination, txData.amount, undefined, txData.feePerKB, utxosToUse, true, txData.note);
+            const txFee = toBN(tr.getFee());
+            if (txFee.gtn(0) && utxosValue.lte(txData.amount.add(txFee))) {
+                return txFee;
+            }
+        }
+        return null;
+    }
+
+    async createBitcoreTransaction(
+        source: string,
+        destination: string,
+        amountInSatoshi: BN,
+        fee: BN | undefined,
+        feePerKB: BN | undefined,
+        utxos: MempoolUTXO[],
+        useChange: boolean,
+        note?: string,
+        feeSource?: string,
+        feeSourceRemainder?: BN,
+    ): Promise<Transaction> {
+        const updatedUtxos = await this.handleMissingUTXOScripts(utxos, source);
+        const txUTXOs = updatedUtxos.map((utxo) => ({
+            txid: utxo.transactionHash,
+            outputIndex: utxo.position,
+            scriptPubKey: utxo.script,
+            satoshis: utxo.value.toNumber(),
+        }) as UTXO);
+
+        const core = getCore(this.chainType);
+        const tr = new core.Transaction().from(txUTXOs.map((utxo) => new UnspentOutput(utxo))).to(destination, toNumber(amountInSatoshi));
+        if (feeSourceRemainder && feeSource) {
+            tr.to(feeSource, feeSourceRemainder.toNumber());
+        }
+        if (note) {
+            tr.addData(Buffer.from(unPrefix0x(note), "hex"));
+        }
+        tr.enableRBF();
+        if (fee) {
+            tr.fee(toNumber(fee));
+        } else if (feePerKB) {
+            tr.feePerKb(feePerKB.toNumber());
+        }
+        if (useChange) {
+            tr.change(source);
+        }
+        return tr;
     }
 }
