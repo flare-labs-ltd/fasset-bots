@@ -461,6 +461,27 @@ describe("Dogecoin wallet tests", () => {
         });
     });
 
+    it("Should submit transaction with 2 wallets - no restrictions", async () => {
+        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
+
+        const amountToSendSatoshi = toBNExp(7, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)
+        const address2Included = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1Included).to.be.true;
+        expect(address2Included).to.be.true;
+        const address1IncludedOut = await walletAddressesIncludedInOutputs(wClient, fundedAddress, txEnt.raw!)
+        const address2IncludedOut = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1IncludedOut).to.be.true;
+        expect(address2IncludedOut).to.be.true;
+
+        await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
     it("Should submit transaction with 2 wallets and suggestedFeePerKB and maxFeeForSource", async () => {
         await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
 

@@ -228,7 +228,6 @@ export class TransactionService {
             if (!validChoices) {
                 throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}`)
             }
-
             let selectionWithLowestInputs: MempoolUTXO[] | null = null;
             for (const utxos of validChoices) {
                 const tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, txData.feePerKB, utxos, isPayment, note);
@@ -295,6 +294,7 @@ export class TransactionService {
         const baseTransaction = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, txDataForAmount.feePerKB, validChoicesForAmount[0], true, note);
         // If fee is lower than dust ignore the fee source
         if (toBN(baseTransaction.getFee()).lte(getDustAmount(this.chainType))) {
+            logger.info(`Transaction ${txDbId} will be prepared with single wallet - fee is lower than dust ${baseTransaction.getFee()}`);
             return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feePerKB, suggestedFeePerKB, feeInSatoshi, maxFee, note);
         }
 
@@ -312,6 +312,7 @@ export class TransactionService {
 
         const validChoicesForFee = await this.utxoService.fetchUTXOs(txDataForFee);
         if (!validChoicesForFee) { // if no utxos for feeSource -> create only base transaction
+            logger.info(`Transaction ${txDbId} will be prepared with single wallet - no utxos for fee wallet.`);
             return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feePerKB, suggestedFeePerKB, feeInSatoshi, maxFee, note);
         }
 
@@ -319,22 +320,28 @@ export class TransactionService {
 
         const utxosForFeeAmount = validChoicesForFee[0].reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
         let tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, txDataForAmount.feePerKB, utxos, true, note);
-        const correctedFee = toBN(tr.getFee()).add(feeInSatoshi ? toBN(0) : feePerKB.muln(getOutputSize(this.chainType)).divn(1000)); // Fee should be higher since we have additional output
-        tr.fee(correctedFee.toNumber());
 
         let feeToUse = toBN(tr.getFee());
         let feeRemainder = utxosForFeeAmount.sub(feeToUse);
 
-        if (usingSuggestedFee && maxFeeForFeeSource) {
-            logger.info(`Lowering fee for transaction ${txDbId} to ${maxFeeForFeeSource.toNumber()} satoshi (max fee);`);
-            feeRemainder = utxosForFeeAmount.sub(maxFeeForFeeSource);
-            feeToUse = maxFeeForFeeSource;
-        }
         if (!usingSuggestedFee && maxFeeForFeeSource && feeToUse.gt(maxFeeForFeeSource)) { // fee > maxFeeSource -> create only base transaction
+            logger.info(`Transaction ${txDbId} will be prepared with single wallet - maxFeeForFeeSource exceeded ${feeToUse.toString()} > ${maxFeeForFeeSource.toString()}`);
             return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feePerKB, suggestedFeePerKB, feeInSatoshi, maxFee, note);
         }
+
         if (feeRemainder.gt(getDustAmount(this.chainType))) {
-            tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeToUse, undefined, utxos, true, note, feeSource, feeRemainder);
+            if (usingSuggestedFee && maxFeeForFeeSource && feeToUse.gt(maxFeeForFeeSource)) {
+                logger.info(`Lowering fee for transaction ${txDbId} to ${maxFeeForFeeSource.toNumber()} satoshi (max fee);`);
+                feeToUse = maxFeeForFeeSource;
+                feeRemainder = utxosForFeeAmount.sub(maxFeeForFeeSource);
+            } else {
+                const correctedFee = toBN(tr.getFee()).add(feeInSatoshi ? toBN(0) : feePerKB.muln(getOutputSize(this.chainType)).divn(1000)); // Fee should be higher since we have additional output
+                feeToUse = correctedFee;
+                feeRemainder = utxosForFeeAmount.sub(feeToUse);
+            }
+            if (feeRemainder.gt(getDustAmount(this.chainType))) {
+                tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeToUse, undefined, utxos, true, note, feeSource, feeRemainder);
+            }
         }
 
         return [tr, utxos];
