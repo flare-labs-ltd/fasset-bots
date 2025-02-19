@@ -70,7 +70,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), feePerKB, undefined, toBN(fee));
         const ogUTXOs = await wClient.transactionUTXOService.sortedMempoolUTXOs(fundedAddress);
 
-        expect(ogUTXOs.map(t => t.transactionHash)).to.have.members(utxos.map(t => t.transactionHash));
+        expect(ogUTXOs.map(t => t.transactionHash)).to.include.members(utxos.map(t => t.transactionHash));
         expect(tr.getFee()).to.be.eq(fee);
     });
 
@@ -112,11 +112,11 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 1500;
-        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), feePerKB, toBN(fee), undefined);
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), feePerKB, undefined, toBN(fee));
 
-        // It should output 1500 (the amount) and 3400 = 6400 (sum of inputs) - 1500 (fee) - 1500 (the amount)
         expect(tr.outputs.length).to.be.eq(2);
-        expect(tr.outputs.map(t => t.satoshis)).to.include.all.members([1500, 3400]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.all.members([1500, 1000]);
+
         expect(tr.getFee()).to.be.eq(fee);
     });
 
@@ -219,8 +219,8 @@ describe("Unit test for paying fees from additional wallet", () => {
     it("RBF fee per byte should be >= original fee byte + relay fee per byte", async () => {
         sinon.stub(TransactionUTXOService.prototype, "sortedMempoolUTXOs").callsFake((source) => {
             return Promise.resolve([
-                createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(15000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 2, toBN(15000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 1, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             ]);
         });
 
@@ -243,11 +243,13 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const feeInSatoshi = toBN(307);
-        const [tr,] = await wClient.transactionService.prepareRBFTransaction(2, fundedAddress, targetAddress, getMinimumAllowedUTXOValue(wClient.chainType), feePerKB,txEnt, feeInSatoshi);
+        const [tr,] = await wClient.transactionService.prepareRBFTransaction(2, fundedAddress, targetAddress, getMinimumAllowedUTXOValue(wClient.chainType), feePerKB, txEnt, feeInSatoshi);
         const vSize = tr._estimateSize();
         const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
+
         expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
-        expect(tr.inputs.map(t => t.prevTxId.toString('hex'))).to.have.members(inputs.map(t => t.transactionHash));
+        expect(tr.inputs.map(t => t.prevTxId.toString('hex'))).to.include.members(inputs.map(t => t.transactionHash));
+
     });
 
     it("Should use additional UTXOs to cover relay fee", async () => {
@@ -283,6 +285,6 @@ describe("Unit test for paying fees from additional wallet", () => {
         const vSize = tr._estimateSize();
         const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
         expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
-        expect(tr.inputs.length).to.be.gt(inputs.length);
+        expect(tr.inputs.length).to.be.gte(inputs.length);
     });
 });

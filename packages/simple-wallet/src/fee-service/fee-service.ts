@@ -50,13 +50,14 @@ export class BlockchainFeeService {
 
         let weightedFeeSum = toBN(0);
         let totalWeight = 0;
+        let gettingFeeStatsFromInfo: string[] = [];
         for (let index = 1; index <= this.calculateFeeBlocks; index++) {
             const blockHeight = this.currentBlockHeight - this.calculateFeeBlocks + index;
             const historyFee = this.feeHistory.data.get(blockHeight);
 
             let fee = historyFee;
             if (!historyFee || historyFee && historyFee.eqn(0)) {
-                logger.info(`Re-fetching fee rate for block ${blockHeight}`);
+                logger.info(`Fee for block ${blockHeight} is missing or zero. Re-fetching.`);
                 fee = await this.feeHistory.loadBlockFromService(this.rootEm, blockHeight, async (bh) => await this.getFeeRateAt(bh));
             }
 
@@ -65,8 +66,10 @@ export class BlockchainFeeService {
             const weight = index;
             weightedFeeSum = weightedFeeSum.add(fee.muln(weight));
             totalWeight += weight;
+            gettingFeeStatsFromInfo.push(`blockHeight: ${blockHeight}, fee: ${fee}`);
         }
         const movingAverageWeightedFee = weightedFeeSum.divn(totalWeight);
+        logger.info(`Calculated 'getLatestFeeStats': ${movingAverageWeightedFee.toString()} sats/kb at block ${this.currentBlockHeight}, details: ${gettingFeeStatsFromInfo.join("; ")}`);
         return movingAverageWeightedFee;
     }
 
