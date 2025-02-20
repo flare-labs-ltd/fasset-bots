@@ -87,7 +87,7 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
                 return DOGE_DEFAULT_FEE_PER_KB.toNumber();
             }
             const fee = Number(res.data.result);
-            if (isNaN(fee)) {
+            if (isNaN(fee) || fee <= 0) {
                 logger.error(`Invalid fee estimate received: ${res.data.result}`);
                 return DOGE_DEFAULT_FEE_PER_KB.toNumber();
             }

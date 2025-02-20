@@ -51,7 +51,7 @@ export class TransactionFeeService {
             } else {
                 fee = await this.blockchainAPI.getCurrentFeeRate();
             }
-            if (fee === 0) {
+            if (fee <= 0) {
                 return getDefaultFeePerKB(this.chainType);
             }
             const rateInSatoshies = toBN(Math.round(fee));
