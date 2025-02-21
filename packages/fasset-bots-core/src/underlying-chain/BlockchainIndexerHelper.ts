@@ -487,7 +487,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 return 3;
             case ChainId.BTC:
                 return 6;
-            case ChainId.testBTC:
+            case ChainId.testBTC: // fdc has finalization set to 40 due to testBTC v4 forks
                 return 40;
             case ChainId.DOGE:
             case ChainId.testDOGE:
