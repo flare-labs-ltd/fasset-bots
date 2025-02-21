@@ -486,8 +486,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
             case ChainId.testXRP:
                 return 3;
             case ChainId.BTC:
-            case ChainId.testBTC:
                 return 6;
+            case ChainId.testBTC:
+                return 40;
             case ChainId.DOGE:
             case ChainId.testDOGE:
                 return 60;
