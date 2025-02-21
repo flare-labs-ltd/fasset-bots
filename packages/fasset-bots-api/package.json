@@ -1,6 +1,6 @@
 {
     "name": "@flarelabs/fasset-bots-api",
-    "version": "1.1.3",
+    "version": "1.2.0-rc.1",
     "description": "FAsset bots web API",
     "author": "Flare Labs",
     "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
