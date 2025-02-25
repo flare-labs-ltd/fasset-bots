@@ -32,18 +32,6 @@
             "stuckTransactionOptions": {
                 "desiredChangeValue": 200
             }
-        },
-        "FBTC": {
-            "chainId": "BTC",
-            "tokenName": "BTC",
-            "tokenSymbol": "BTC",
-            "tokenDecimals": 8,
-            "indexerUrls": ["https://fdc-verifiers-mainnet.flare.network/verifier/btc"],
-            "walletUrls": ["https://blockbook-bitcoin.flare.network/api/v2"],
-            "priceChangeEmitter": "FtsoV2PriceStore",
-            "stuckTransactionOptions": {
-                "desiredChangeValue": 0.05
-            }
         }
     },
     "agentBotSettings": {
@@ -74,11 +62,6 @@
             "FDOGE": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "20",
-                "feeSafetyFactorPerKB": 1
-            },
-            "FBTC": {
-                "recommendedOwnerBalance": "0",
-                "minimumFreeUnderlyingBalance": "0",
                 "feeSafetyFactorPerKB": 1
             }
         }
