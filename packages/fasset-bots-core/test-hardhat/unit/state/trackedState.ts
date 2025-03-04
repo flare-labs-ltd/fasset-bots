@@ -72,8 +72,7 @@ describe("Tracked state tests", () => {
         context = await createTestAssetContext(governance, testChainInfo.xrp, { updateExecutor, assetManagerControllerAddress });
         trackedStateContext = getTestAssetTrackedStateContext(context);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
-        const lastBlock = await web3.eth.getBlockNumber();
-        trackedState = new TrackedState(trackedStateContext, lastBlock);
+        trackedState = new TrackedState(trackedStateContext);
         await trackedState.initialize();
     }
 

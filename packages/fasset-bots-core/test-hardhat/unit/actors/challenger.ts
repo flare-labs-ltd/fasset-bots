@@ -44,8 +44,7 @@ describe("Challenger unit tests", () => {
     async function initialize() {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(trackedStateContext, lastBlock);
+        state = new TrackedState(trackedStateContext);
         await state.initialize();
         return { context, trackedStateContext, state };
     }
@@ -96,8 +95,7 @@ describe("Challenger unit tests", () => {
 
     it("Should not run step - error", async () => {
         const spyConsole = spy.on(console, "error");
-        const lastBlock = await web3.eth.getBlockNumber();
-        const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
+        const mockState = new MockTrackedState(trackedStateContext, null);
         await mockState.initialize();
         const challenger = await createTestChallenger(trackedStateContext, challengerAddress, mockState);
         expect(challenger.address).to.eq(challengerAddress);
@@ -107,8 +105,7 @@ describe("Challenger unit tests", () => {
 
     it("Should create challenger with explicitly stated default strategy", async () => {
         trackedStateContext = getTestAssetTrackedStateContext(context, true);
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(trackedStateContext, lastBlock);
+        state = new TrackedState(trackedStateContext);
         await state.initialize();
         const challenger = await createTestChallenger(trackedStateContext, challengerAddress, state);
         expect(challenger).to.not.be.undefined;

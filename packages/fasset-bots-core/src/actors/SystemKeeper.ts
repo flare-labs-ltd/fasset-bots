@@ -27,8 +27,7 @@ export class SystemKeeper extends ActorBase {
         logger.info(`SystemKeeper ${address} started to create asset context.`);
         const context = await createNativeContext(config, fAsset);
         logger.info(`SystemKeeper ${address} initialized asset context.`);
-        const lastBlock = await web3.eth.getBlockNumber();
-        const trackedState = new TrackedState(context, lastBlock);
+        const trackedState = new TrackedState(context);
         await trackedState.initialize();
         logger.info(`SystemKeeper ${address} initialized tracked state.`);
         return new SystemKeeper(new ScopedRunner(), address, trackedState);

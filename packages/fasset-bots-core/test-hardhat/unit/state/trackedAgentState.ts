@@ -58,8 +58,7 @@ describe("Tracked agent state tests", () => {
         const agentVaultCollateralToken = await agentBot.agent.getVaultCollateral();
         await mintVaultCollateralToOwner(amount, agentVaultCollateralToken.token, ownerAddress);
         await agentBot.agent.depositVaultCollateral(amount);
-        const lastBlock = await web3.eth.getBlockNumber();
-        trackedState = new TrackedState(trackedStateContext, lastBlock);
+        trackedState = new TrackedState(trackedStateContext);
         await trackedState.initialize();
         trackedAgentState = new TrackedAgentState(trackedState, agentCreated);
         trackedAgentState.initialize(await agentBot.agent.getAgentInfo());

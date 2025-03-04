@@ -8,10 +8,9 @@ import { MockTrackedAgentState } from "./MockTrackedAgentState";
 export class MockTrackedState extends TrackedState {
     constructor(
         context: IAssetNativeChainContext,
-        currentEventBlock: number,
         public trackedState: TrackedState | null
     ) {
-        super(context, currentEventBlock);
+        super(context);
     }
 
     // tracked agents
