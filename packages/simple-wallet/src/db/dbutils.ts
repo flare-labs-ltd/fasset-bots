@@ -30,12 +30,15 @@ export async function createInitialTransactionEntity(
     isFreeUnderlying?: boolean,
     minFeePerKB?: BN
 ): Promise<TransactionEntity> {
-    logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops};${replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ""}`);
+    const trimmedSource = source.trim();
+    const trimmedDestination = destination.trim();
+    const trimmedFeeSource = feeSource?.trim();
+    logger.info(`Creating transaction ${trimmedSource}, ${trimmedDestination}, ${amountInDrops};${replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ""}`);
     return await transactional(rootEm, async (em) => {
         const ent = em.create(TransactionEntity, {
             chainType,
-            source,
-            destination,
+            source: trimmedSource,
+            destination: trimmedDestination,
             status: TransactionStatus.TX_CREATED,
             maxFee: maxFee ?? null,
             executeUntilBlock: executeUntilBlock ?? null,
@@ -44,7 +47,7 @@ export async function createInitialTransactionEntity(
             amount: amountInDrops,
             fee: feeInDrops ?? null,
             rbfReplacementFor: replacementFor ?? null,
-            feeSource: feeSource ?? null,
+            feeSource: trimmedFeeSource ?? null,
             maxPaymentForFeeSource: maxPaymentForFeeSource ?? null,
             isFreeUnderlyingTransaction: isFreeUnderlying ?? false,
             minFeePerKB: minFeePerKB ?? null
