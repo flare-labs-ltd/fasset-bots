@@ -74,12 +74,12 @@
             "FDOGE": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "20",
-                "feeSafetyFactorPerKB": 1
+                "feeSafetyFactorPerKB": 2
             },
             "FBTC": {
                 "recommendedOwnerBalance": "0",
                 "minimumFreeUnderlyingBalance": "0",
-                "feeSafetyFactorPerKB": 1
+                "feeSafetyFactorPerKB": 2
             }
         }
     },
