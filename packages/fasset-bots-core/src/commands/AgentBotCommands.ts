@@ -461,6 +461,10 @@ export class AgentBotCommands {
      */
     async withdrawUnderlying(agentVault: string, amount: string | BN, destinationAddress: string): Promise<number | null> {
         logger.info(`Agent ${agentVault} is trying to announce underlying withdrawal with amount ${amount.toString()} to destination ${destinationAddress}.`);
+        const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId.sourceId, destinationAddress);
+        if (!(validation.isValid && validation.standardAddress === destinationAddress)) {
+            throw new CommandLineError(`Invalid destination address: ${destinationAddress}`);
+        }
         const { agentBot } = await this.getAgentBot(agentVault);
         // check that amount is not too high (we don't want the agent to go to full liquidation)
         const safeToWithdraw = await agentBot.getSafeToWithdrawUnderlying();

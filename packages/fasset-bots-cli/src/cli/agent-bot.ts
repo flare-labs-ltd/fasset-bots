@@ -302,8 +302,9 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const destinationAddressTrimmed = destinationAddress.trim();
         const currency = await Currencies.fassetUnderlyingToken(cli.context);
-        await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddress);
+        await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddressTrimmed);
     });
 
 program

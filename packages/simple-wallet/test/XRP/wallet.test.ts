@@ -144,8 +144,14 @@ describe("Xrp wallet tests", () => {
         expect(wallet1.publicKey).to.eq(public1);
     });
 
+    it("Should fail transaction - invalid address", async () => {
+        const id = await wClient.createPaymentTransaction(fundedAddress, "targetAddress", amountToSendDropsFirst, undefined, note, undefined);
+        expect(id).to.be.gt(0);
+        await waitForTxToFinishWithStatus(2, 120, wClient.rootEm, TransactionStatus.TX_FAILED, id);
+    });
+
     it("Should submit transaction", async () => {
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, "   " + targetAddress + " ", amountToSendDropsFirst, undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });

@@ -281,12 +281,22 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    async submitPreparedTransactions(txEnt: TransactionEntity): Promise<void> {
       logger.info(`Prepared transaction ${txEnt.id} is being submitted.`);
-      const transaction = JSON.parse(txEnt.raw!) as xrpl.Payment | xrpl.AccountDelete;
+      const currentLedger = await this.getLatestValidatedLedgerIndex();
+      const shouldSubmit = checkIfShouldStillSubmit(this, currentLedger, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
+      if (!shouldSubmit) {
+         await handleNoTimeToSubmitLeft(this.rootEm, txEnt.id, currentLedger, this.executionBlockOffset, "prepareAndSubmitCreatedTransaction", txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.toString());
+         return;
+      } else if (!txEnt.executeUntilBlock && !txEnt.executeUntilTimestamp) {
+         await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+            txEntToUpdate.executeUntilBlock = currentLedger + this.blockOffset;
+         });
+      }
       const privateKey = await this.walletKeys.getKey(txEnt.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, txEnt.id, "submitPreparedTransactions");
          return;
       }
+      const transaction = JSON.parse(txEnt.raw!) as xrpl.Payment | xrpl.AccountDelete;
       await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
    }
 
