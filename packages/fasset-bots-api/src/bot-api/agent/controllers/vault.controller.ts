@@ -3,7 +3,7 @@ import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } fr
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance, Collaterals } from "../../common/AgentResponse";
+import { AgentBalance, Collaterals, VaultCVData } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
@@ -177,5 +177,37 @@ export class AgentVaultController {
         @Param("agentVaultAddress") agentVaultAddress: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.getSelfMintFromFreeUnderlyingBalances(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getAgentCVData/:fAssetSymbol/:agentVaultAddress")
+    public async getAgentCVData(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<VaultCVData>> {
+        return handleApiResponse(this.agentService.getVaultCVData(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("requestDepositToCV/:fAssetSymbol/:agentVaultAddress/:amount")
+    public async requestDepositToCV(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.requestCVDeposit(fAssetSymbol, agentVaultAddress,amount));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("requestWithdrawalFromCV/:fAssetSymbol/:agentVaultAddress/:amount")
+    public async requestWithdrawalFromCV(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.requestCVWithdrawal(fAssetSymbol, agentVaultAddress,amount));
     }
 }

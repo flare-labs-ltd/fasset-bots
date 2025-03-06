@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCVData, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO, Alerts, DelegateDTO } from "../../common/AgentSettingsDTO";
@@ -641,7 +641,8 @@ export class AgentService {
                     totalPoolCollateralUSD = toBN(info.totalPoolCollateralNATWei).mul(priceUSD).div(toBNExp(1, 18 + Number(cflrPrice.decimals)));
                     prices.push({ symbol: vaultCollateralType.tokenFtsoSymbol, price: priceVaultUSD, decimals: Number(priceVault.decimals) });
                 }
-                const totalCollateralUSD = formatFixed(totalVaultCollateralUSD.add(totalPoolCollateralUSD), 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+                const totalCollateralUSDPool = formatFixed(totalPoolCollateralUSD, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+                const totalCollateralUSDVault = formatFixed(totalVaultCollateralUSD, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
                 const feeShare = Number(info.poolFeeShareBIPS) / MAX_BIPS;
                 const assetManager = cli.context.assetManager;
                 const air = await AgentInfoReader.create(assetManager, vault.vaultAddress);
@@ -660,7 +661,7 @@ export class AgentService {
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     collateralToken: info.vaultCollateralToken, health: status,
-                    poolCollateralUSD: totalCollateralUSD,
+                    poolCollateralUSD: totalCollateralUSDPool,
                     mintCount: "0",
                     poolFee: (feeShare * 100).toString(),
                     fasset: fasset,
@@ -670,6 +671,11 @@ export class AgentService {
                     handshakeType: Number(info.handshakeType),
                     delegates: delegates,
                     delegationPercentage: delegationPercentage.toString(),
+                    allLots: (Number(info.freeCollateralLots) + mintedLots).toString(),
+                    transferableToCV: "10,200.24",
+                    underlyingSymbol: cli.context.chainInfo.symbol,
+                    transferableFromCV: "10,200.24",
+                    redeemCapacity: (Number(info.mintedUBA)/lotSize).toString()
                 };
                 allVaults.push(vaultInfo);
             }
@@ -848,5 +854,21 @@ export class AgentService {
             balanceFormatted = formatFixed(toBN(fassetBalance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
         }
         return {balance: balanceFormatted, symbol: cli.context.fAssetSymbol};
+    }
+
+    async getVaultCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<VaultCVData> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        // amount to mint
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const underlyingBalance = formatFixed(toBN(info.underlyingBalanceUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        return {underlyingBalance: underlyingBalance, transferableBalance: "12,224.12", requestableBalance: "22,241.22"};
+    }
+
+    async requestCVDeposit(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        return;
+    }
+
+    async requestCVWithdrawal(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        return;
     }
 }

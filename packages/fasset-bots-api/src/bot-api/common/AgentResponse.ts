@@ -64,6 +64,12 @@ export interface AllBalances {
     wrapped?: string;
 }
 
+export interface VaultCVData {
+    underlyingBalance: string;
+    transferableBalance: string;
+    requestableBalance: string;
+}
+
 export interface UnderlyingAddress {
     asset: string;
     address: string;
@@ -95,9 +101,9 @@ export interface VaultInfo {
     agentCPTs: string;
     collateralToken: string;
     health: string;
-    poolCollateralUSD: string,
-    mintCount: string,
-    poolFee: string,
+    poolCollateralUSD: string;
+    mintCount: string;
+    poolFee: string;
     createdAt: number;
     fasset: string;
     lotsPoolBacked: string;
@@ -105,6 +111,11 @@ export interface VaultInfo {
     handshakeType: number;
     delegates: Delegation[];
     delegationPercentage: string;
+    allLots: string;
+    transferableToCV: string;
+    underlyingSymbol: string;
+    redeemCapacity: string;
+    transferableFromCV: string;
 }
 
 export interface AllVaults {
