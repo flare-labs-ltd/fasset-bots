@@ -3,7 +3,7 @@ import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } fr
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance, Collaterals, VaultCVData } from "../../common/AgentResponse";
+import { AgentBalance, Collaterals, DepositableVaultCVData, RequestableVaultCVData } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
@@ -181,12 +181,22 @@ export class AgentVaultController {
 
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
-    @Get("getAgentCVData/:fAssetSymbol/:agentVaultAddress")
+    @Get("getTransferableCVData/:fAssetSymbol/:agentVaultAddress")
+    public async getAgentTransferableCVData(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<DepositableVaultCVData>> {
+        return handleApiResponse(this.agentService.getVaultDepositableCVData(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getRequestableCVData/:fAssetSymbol/:agentVaultAddress")
     public async getAgentCVData(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
-    ): Promise<ApiResponseWrapper<VaultCVData>> {
-        return handleApiResponse(this.agentService.getVaultCVData(fAssetSymbol, agentVaultAddress));
+    ): Promise<ApiResponseWrapper<RequestableVaultCVData>> {
+        return handleApiResponse(this.agentService.getVaultRequestableCVData(fAssetSymbol, agentVaultAddress));
     }
 
     @UseGuards(JwtAuthGuard)

@@ -64,10 +64,19 @@ export interface AllBalances {
     wrapped?: string;
 }
 
-export interface VaultCVData {
+export interface RequestableVaultCVData {
+    underlyingBalance: string;
+    requestableBalance: string;
+}
+
+export interface AMGSettings {
+    assetMintingDecimals: BNish;
+    assetMintingGranularityUBA: BNish;
+}
+
+export interface DepositableVaultCVData {
     underlyingBalance: string;
     transferableBalance: string;
-    requestableBalance: string;
 }
 
 export interface UnderlyingAddress {
