@@ -33,7 +33,7 @@ export class TransactionMonitor implements ITransactionMonitor {
     private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
-    private runningThreads: Promise<void>[] = [];
+    private runningThreads: Map<Promise<void>, string> = new Map();
     private createWallet: CreateWalletMethod;
     private monitoringId: string;
     private feeService: BlockchainFeeService | undefined;
@@ -51,11 +51,11 @@ export class TransactionMonitor implements ITransactionMonitor {
     }
 
     isMonitoring(): boolean {
-        return this.monitoring || this.runningThreads.length > 0;
+        return this.monitoring || this.runningThreads.size > 0;
     }
 
     async startMonitoring(): Promise<boolean> {
-        if (this.runningThreads.length > 0) {
+        if (this.runningThreads.size > 0) {
             logger.error(`Monitor ${this.monitoringId} already used`);
             return true;
         }
@@ -118,8 +118,13 @@ export class TransactionMonitor implements ITransactionMonitor {
     }
 
     private async waitForThreadsToStop() {
-        await Promise.allSettled(this.runningThreads);
-        this.runningThreads = [];
+        await Promise.allSettled(Array.from(this.runningThreads.keys()));
+        /* istanbul ignore next: should never happen */
+        if (this.runningThreads.size > 0) {
+            const remaining = Array.from(this.runningThreads.values());
+            logger.error(`Threads not stopped properly - threads [${remaining}] not cleaned up.`);
+            this.runningThreads.clear();
+        }
     }
 
     private startThread(rootEm: EntityManager, name: string, method: (em: EntityManager) => Promise<void>) {
@@ -131,9 +136,11 @@ export class TransactionMonitor implements ITransactionMonitor {
                 logger.info(`Thread ended ${name}.`);
             } catch (error) {
                 logger.error(`Thread ${name} stopped due to unexpected error:`, error);
+            } finally {
+                this.runningThreads.delete(thread);
             }
         });
-        this.runningThreads.push(thread);
+        this.runningThreads.set(thread, name);
     }
 
     /**
@@ -208,6 +215,7 @@ export class TransactionMonitor implements ITransactionMonitor {
             return false;
         }
         const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
+        logger.error(`Running monitor lock expired for chain ${this.monitoringId} (${elapsed/1000}s since last ping) - stopping monitor.`);
         return elapsed < MONITOR_EXPIRATION_INTERVAL;
     }
 
@@ -302,5 +310,4 @@ export class TransactionMonitor implements ITransactionMonitor {
             throw new StopTransactionMonitor();
         }
     }
-
 }
