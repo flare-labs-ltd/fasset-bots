@@ -1,6 +1,7 @@
+import BN from "bn.js";
 import { AgentDestroyed } from "../../typechain-truffle/IIAssetManager";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
-import { AgentStatus, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentStatus, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { isPriceChangeEvent } from "../utils";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
@@ -24,12 +25,10 @@ export const DANGER_BLOCK_DIFF = 50;
 export class TrackedState {
     static deepCopyWithObjectCreate = true;
 
-    constructor(
-        public context: IAssetNativeChainContext,
-        private currentEventBlock: number
-    ) {}
+    constructor(public context: IAssetNativeChainContext) {}
 
     // state
+    currentEventBlock: number | null = null
     fAssetSupply = BN_ZERO;
 
     // must call initialize to init prices and settings
@@ -70,7 +69,9 @@ export class TrackedState {
             }
         }
         // fAsset supply
-        this.fAssetSupply = await this.context.fAsset.totalSupply();
+        const { info: fassetSupply, block } = await this.getFassetSupply();
+        this.fAssetSupply = fassetSupply;
+        this.currentEventBlock = block + 1;
         logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
         // prices
         [this.prices, this.trustedPrices] = await this.getPrices();
@@ -140,32 +141,32 @@ export class TrackedState {
             logger.info(`Tracked State set liquidationStrategySettings ${formatArgs(this.settings)}.`);
         } else if (eventIs(event, this.context.assetManager, "AgentSettingChanged")) {
             logger.info(`Tracked State received event 'AgentSettingChanged' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentSettingChanged(event.args.name, event.args.value);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleAgentSettingChanged(event.args.name, event.args.value);
         } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
             logger.info(`Tracked State received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
             this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA).add(toBN(event.args.poolFeeUBA)));
             logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleMintingExecuted(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleMintingExecuted(event.args);
         } else if (eventIs(event, this.context.assetManager, "SelfMint")) {
             logger.info(`Tracked State received event 'SelfMint' with data ${formatArgs(event.args)}.`);
             this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA).add(toBN(event.args.poolFeeUBA)));
             logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleSelfMint(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleSelfMint(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
             logger.info(`Tracked State received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
             this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
             logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionRequested(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionRequested(event.args);
         } else if (eventIs(event, this.context.assetManager, "SelfClose")) {
             logger.info(`Tracked State received event 'SelfClose' with data ${formatArgs(event.args)}.`);
             this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
             logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleSelfClose(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleSelfClose(event.args);
         } else if (eventIs(event, this.context.assetManager, "LiquidationPerformed")) {
             logger.info(`Tracked State received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
             this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
             logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleLiquidationPerformed(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleLiquidationPerformed(event.args);
         } else if (eventIs(event, this.context.assetManager, "CollateralTypeAdded")) {
             logger.info(`Tracked State received event 'CollateralTypeAdded' with data ${formatArgs(event.args)}.`);
             void this.addCollateralType({ ...event.args, validUntil: BN_ZERO });
@@ -182,7 +183,7 @@ export class TrackedState {
         } else if (eventIs(event, this.context.assetManager, "AgentCollateralTypeChanged")) {
             logger.info(`Tracked State received event 'AgentCollateralTypeChanged' with data ${formatArgs(event.args)}.`);
             if (event.args.collateralClass.toNumber() === CollateralClass.VAULT) {
-                (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentCollateralTypeChanged(event.args);
+                (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleAgentCollateralTypeChanged(event.args);
             }
         } else if (eventIs(event, this.context.assetManager, "AgentVaultCreated")) {
             logger.info(`Tracked State received event 'AgentVaultCreated' with data ${formatArgs(event.args)}.`);
@@ -192,64 +193,64 @@ export class TrackedState {
             this.destroyAgent(event.args);
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Tracked State received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.CCB, event.args.timestamp);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleStatusChange(AgentStatus.CCB, event.args.timestamp);
         } else if (eventIs(event, this.context.assetManager, "LiquidationStarted")) {
             logger.info(`Tracked State received event 'LiquidationStarted' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.LIQUIDATION, event.args.timestamp);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleStatusChange(AgentStatus.LIQUIDATION, event.args.timestamp);
         } else if (eventIs(event, this.context.assetManager, "FullLiquidationStarted")) {
             logger.info(`Tracked State received event 'FullLiquidationStarted' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.FULL_LIQUIDATION, event.args.timestamp);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleStatusChange(AgentStatus.FULL_LIQUIDATION, event.args.timestamp);
         } else if (eventIs(event, this.context.assetManager, "LiquidationEnded")) {
             logger.info(`Tracked State received event 'LiquidationEnded' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.NORMAL);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleStatusChange(AgentStatus.NORMAL);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyAnnounced")) {
             logger.info(`Tracked State received event 'AgentDestroyAnnounced' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.DESTROYING);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleStatusChange(AgentStatus.DESTROYING);
         } else if (eventIs(event, this.context.assetManager, "AgentAvailable")) {
             logger.info(`Tracked State received event 'AgentAvailable' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentAvailable(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleAgentAvailable(event.args);
         } else if (eventIs(event, this.context.assetManager, "AvailableAgentExited")) {
             logger.info(`Tracked State received event 'AvailableAgentExited' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleAvailableAgentExited();
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleAvailableAgentExited();
         } else if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
             logger.info(`Tracked State received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleCollateralReserved(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleCollateralReserved(event.args);
         } else if (eventIs(event, this.context.assetManager, "MintingPaymentDefault")) {
             logger.info(`Tracked State received event 'MintingPaymentDefault' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleMintingPaymentDefault(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleMintingPaymentDefault(event.args);
         } else if (eventIs(event, this.context.assetManager, "CollateralReservationDeleted")) {
             logger.info(`Tracked State received event 'CollateralReservationDeleted' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleCollateralReservationDeleted(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleCollateralReservationDeleted(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
             logger.info(`Tracked State received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPerformed(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionPerformed(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionDefault")) {
             logger.info(`Tracked State received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionDefault(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionDefault(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
             logger.info(`Tracked State received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentBlocked(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionPaymentBlocked(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
             logger.info(`Tracked State received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentFailed(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionPaymentFailed(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedeemedInCollateral")) {
             logger.info(`Tracked State received event 'RedeemedInCollateral' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedeemedInCollateral(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedeemedInCollateral(event.args);
         } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceToppedUp")) {
             logger.info(`Tracked State received event 'UnderlyingBalanceToppedUp' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingBalanceToppedUp(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleUnderlyingBalanceToppedUp(event.args);
         } else if (eventIs(event, this.context.assetManager, "UnderlyingWithdrawalAnnounced")) {
             logger.info(`Tracked State received event 'UnderlyingWithdrawalAnnounced' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalAnnounced(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleUnderlyingWithdrawalAnnounced(event.args);
         } else if (eventIs(event, this.context.assetManager, "UnderlyingWithdrawalConfirmed")) {
             logger.info(`Tracked State received event 'UnderlyingWithdrawalConfirmed' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalConfirmed(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleUnderlyingWithdrawalConfirmed(event.args);
         } else if (eventIs(event, this.context.assetManager, "UnderlyingWithdrawalCancelled")) {
             logger.info(`Tracked State received event 'UnderlyingWithdrawalCancelled' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalCancelled();
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleUnderlyingWithdrawalCancelled();
         } else if (eventIs(event, this.context.assetManager, "DustChanged")) {
             logger.info(`Tracked State received event 'DustChanged' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleDustChanged(event.args);
         }
         for (const collateral of this.collaterals.list) {
             const contract = await tokenContract(collateral.token);
@@ -264,6 +265,9 @@ export class TrackedState {
     }
 
     async readUnhandledEvents(): Promise<EvmEvent[]> {
+        if (this.currentEventBlock == null) {
+            throw new Error("Tracked State is not initialized.");
+        }
         logger.info(`Tracked State started reading native events FROM block ${this.currentEventBlock}.`);
         // get all needed logs for state
         const nci = this.context.nativeChainInfo;
@@ -333,7 +337,7 @@ export class TrackedState {
     }
 
     async createAgentWithCurrentState(vaultAddress: string): Promise<TrackedAgentState> {
-        const agentInfo = await this.context.assetManager.getAgentInfo(vaultAddress);
+        const { block, info: agentInfo } = await this.getAgentInfo(vaultAddress);
         const agent = this.createAgent({
             agentVault: vaultAddress,
             owner: agentInfo.ownerManagementAddress,
@@ -354,7 +358,7 @@ export class TrackedState {
                 handshakeType: agentInfo.handshakeType,
             }
         });
-        agent.initialize(agentInfo);
+        agent.initialize(agentInfo, block);
         return agent;
     }
 
@@ -385,11 +389,40 @@ export class TrackedState {
         return this.agents.get(vaultAddress);
     }
 
+    // returns agent if its creation data was fetched before the block of event resulting in modification of its state
+    // otherwise, state described by the event was already processed on chain with agent state storing the data
+    async getAgentTriggerAddIfUpdatable(vaultAddress: string, eventBlock: number): Promise<TrackedAgentState | undefined> {
+        const agent = await this.getAgentTriggerAdd(vaultAddress);
+        if (agent.initBlock == null || agent.initBlock < eventBlock) {
+            return agent;
+        }
+    }
+
     async getAgentTriggerAdd(vaultAddress: string): Promise<TrackedAgentState> {
         const agent = this.agents.get(vaultAddress);
         if (!agent) {
             return await this.createAgentWithCurrentState(vaultAddress);
         }
         return agent;
+    }
+
+    async getAgentInfo(vaultAddress: string): Promise<{ info: AgentInfo, block: number }> {
+        return this.ensureWithinSameBlock(() => this.context.assetManager.getAgentInfo(vaultAddress));
+    }
+
+    async getFassetSupply(): Promise<{ info: BN, block: number }> {
+        return this.ensureWithinSameBlock(async () => this.context.fAsset.totalSupply());
+    }
+
+    async ensureWithinSameBlock<T>(fn: () => Promise<T>): Promise<{ info: T, block: number }> {
+        for (let i = 0; i < MAX_EVENT_HANDLE_RETRY; i++) {
+            const blockBefore = await web3.eth.getBlockNumber();
+            const info = await fn();
+            const blockAfter = await web3.eth.getBlockNumber();
+            if (blockBefore == blockAfter) {
+                return { info, block: blockBefore };
+            }
+        }
+        throw new Error(`Failed to ensure data within same block`);
     }
 }

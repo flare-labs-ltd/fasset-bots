@@ -43,8 +43,7 @@ describe("Liquidator tests", () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context, true);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(trackedStateContext, lastBlock);
+        state = new TrackedState(trackedStateContext);
         await state.initialize();
         return { orm, context, trackedStateContext, chain, state };
     }
@@ -406,7 +405,7 @@ describe("Liquidator tests", () => {
     });
 
     it("Should catch full liquidation", async () => {
-        const challengerState = new TrackedState(trackedStateContext, await web3.eth.getBlockNumber());
+        const challengerState = new TrackedState(trackedStateContext);
         await challengerState.initialize();
         const challenger = await createTestChallenger(trackedStateContext, challengerAddress, challengerState);
         const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);

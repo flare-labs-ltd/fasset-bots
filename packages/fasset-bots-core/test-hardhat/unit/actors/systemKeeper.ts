@@ -25,8 +25,7 @@ describe("System keeper unit tests", () => {
     async function initialize() {
         trackedStateContext = getTestAssetTrackedStateContext(await createTestAssetContext(accounts[0], testChainInfo.xrp));
         runner = new ScopedRunner();
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(trackedStateContext, lastBlock);
+        state = new TrackedState(trackedStateContext);
         await state.initialize();
         return { trackedStateContext, runner, state };
     }
@@ -46,8 +45,7 @@ describe("System keeper unit tests", () => {
 
     it("Should not run step - error", async () => {
         const spyConsole = spy.on(console, "error");
-        const lastBlock = await web3.eth.getBlockNumber();
-        const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
+        const mockState = new MockTrackedState(trackedStateContext, null);
         await mockState.initialize();
         const systemKeeper = new SystemKeeper(runner, systemKeeperAddress, mockState);
         expect(systemKeeper.address).to.eq(systemKeeperAddress);

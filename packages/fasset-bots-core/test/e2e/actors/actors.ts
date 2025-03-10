@@ -79,9 +79,8 @@ describe("Actor tests - coston", () => {
         context = await createAgentBotContext(botConfig, chainConfigAgent!);
         chainConfigActor = requireNotNull(actorConfig.fAssets.get(fAssetSymbol));
         // tracked state
-        const lastBlock = await web3.eth.getBlockNumber();
         const trackedStateContext = await createNativeContext(actorConfig, chainConfigActor!);
-        state = new TrackedState(trackedStateContext, lastBlock);
+        state = new TrackedState(trackedStateContext);
         await state.initialize();
     });
 

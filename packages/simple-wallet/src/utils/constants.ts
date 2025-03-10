@@ -6,7 +6,7 @@ export const MNEMONIC_STRENGTH = 256;
 export const DEFAULT_FEE_INCREASE = 2;
 // monitoring constants
 export const MONITOR_PING_INTERVAL = 5_000; // 5 seconds
-export const MONITOR_EXPIRATION_INTERVAL = 60_000;
+export const MONITOR_EXPIRATION_INTERVAL = 90_000;
 export const MONITOR_LOCK_WAIT_DELAY = 1000; // 1s
 export const MONITOR_LOOP_SLEEP = 2000; // 2s
 export const RESTART_IN_DUE_NO_RESPONSE = 20000; // 20s

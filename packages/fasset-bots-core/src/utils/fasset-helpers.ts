@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { IIAssetManagerInstance } from "../../typechain-truffle";
+import { IAssetManagerContract, IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerEvents, IAssetAgentContext, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";

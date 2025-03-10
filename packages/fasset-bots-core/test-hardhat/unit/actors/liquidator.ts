@@ -36,8 +36,7 @@ describe("Liquidator unit tests", () => {
         trackedStateContext = getTestAssetTrackedStateContext(context);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         runner = new ScopedRunner();
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(trackedStateContext, lastBlock);
+        state = new TrackedState(trackedStateContext);
         await state.initialize();
         return { context, trackedStateContext, runner, state };
     }
@@ -57,8 +56,7 @@ describe("Liquidator unit tests", () => {
 
     it("Should not run step - error", async () => {
         const spyConsole = spy.on(console, "error");
-        const lastBlock = await web3.eth.getBlockNumber();
-        const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
+        const mockState = new MockTrackedState(trackedStateContext, null);
         await mockState.initialize();
         const liquidator = new Liquidator(trackedStateContext, runner, liquidatorAddress, mockState, testNotifierTransports);
         expect(liquidator.address).to.eq(liquidatorAddress);

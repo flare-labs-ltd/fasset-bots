@@ -62,7 +62,7 @@
             "FDOGE": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "20",
-                "feeSafetyFactorPerKB": 1
+                "feeSafetyFactorPerKB": 2
             }
         }
     },

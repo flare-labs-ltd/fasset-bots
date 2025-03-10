@@ -51,8 +51,7 @@ describe("Challenger tests", () => {
     async function initialize() {
         orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(context, lastBlock);
+        state = new TrackedState(context);
         await state.initialize();
         chain = context.blockchainIndexer.chain;
         return { orm, context, state, chain };
@@ -592,8 +591,7 @@ describe("Challenger tests", () => {
 
     it("Should liquidate agent if in full liquidation", async () => {
         const challenger = await createTestChallenger(context, challengerAddress, state);
-        const lastBlock = await web3.eth.getBlockNumber();
-        const liqState = new TrackedState(context, lastBlock);
+        const liqState = new TrackedState(context);
         await liqState.initialize();
         const liquidator = await createTestLiquidator(context, liquidatorAddress, liqState);
         const spyChlg = spy.on(challenger, "doublePaymentChallenge"); // create test actors

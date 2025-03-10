@@ -76,6 +76,9 @@ export class TrackedAgentState {
     dustUBA: BN = BN_ZERO;
     underlyingBalanceUBA: BN = BN_ZERO;
 
+    // safeguard metadata
+    initBlock: number | null = null; // block at which the initial agent info was fetch at
+
     // calculated getters
     get requiredUnderlyingBalanceUBA(): BN {
         const backedUBA = this.mintedUBA.add(this.redeemingUBA);
@@ -86,7 +89,8 @@ export class TrackedAgentState {
         return this.underlyingBalanceUBA.sub(this.requiredUnderlyingBalanceUBA);
     }
 
-    initialize(agentInfo: AgentInfo): void {
+    initialize(agentInfo: AgentInfo, initBlock: number | null = null): void {
+        this.initBlock = initBlock;
         this.status = Number(agentInfo.status);
         this.publiclyAvailable = agentInfo.publiclyAvailable;
         this.totalPoolCollateralNATWei = toBN(agentInfo.totalPoolCollateralNATWei);

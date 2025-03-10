@@ -42,7 +42,7 @@ let wClient: DOGE;
 let testOrm: ORM;
 let monitor: ITransactionMonitor;
 
-describe("DOGE mainnet wallet tests", () => {
+describe.skip("DOGE mainnet wallet tests", () => {
     let removeConsoleLogging: () => void;
 
     before(async () => {

@@ -114,7 +114,10 @@ export interface AgentBotFassetSettingsJson {
     defaultAgentSettings?: Partial<AgentSettingsConfigDefaults>;
 
     /**
-     * A factor used to increase the minimum safety fee per KB. If set to 0, the minimum safety fee will not be applied.
+     * A multiplier used to adjust the suggested minimum fee per KB for UTXO redemption payments, preventing transactions from getting pinned.
+     * If set to 0, the suggested minimum fee won't be calculated.
+     * Default: 2 for UTXO chains (e.g., BTC, DOGE), 0 for XRP (as it is not relevant for XRP).
+     * Note: Before changing values, it is advised to perform calculations to balance pinning prevention with the max transaction fee allocated by the smart contract.
      */
     feeSafetyFactorPerKB: number;
 }

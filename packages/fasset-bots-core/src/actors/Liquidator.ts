@@ -42,8 +42,7 @@ export class Liquidator extends ActorBase {
         logger.info(`Liquidator ${address} started to create asset context.`);
         const context = await createLiquidatorContext(config, fAsset);
         logger.info(`Liquidator ${address} initialized asset context.`);
-        const lastBlock = await web3.eth.getBlockNumber();
-        const trackedState = new TrackedState(context, lastBlock);
+        const trackedState = new TrackedState(context);
         await trackedState.initialize(true);
         logger.info(`Liquidator ${address} initialized tracked state.`);
         return new Liquidator(context, new ScopedRunner(), address, trackedState, config.notifiers);
@@ -85,9 +84,10 @@ export class Liquidator extends ActorBase {
         const timestamp = await latestBlockTimestampBN();
         const agentCandidates = Array.from(this.state.agents.values()).filter(agent => agent.mintedUBA.gt(BN_ZERO));
         const liquidatingAgents = agentCandidates.filter(agent => this.checkAgentForLiquidation(agent, timestamp));
-        const ccbAgents = agentCandidates.filter(agent => !liquidatingAgents.includes(agent) && agent.candidateForCcbLiquidation(timestamp));
+        const nonLiquidatingAgents = agentCandidates.filter(agent => !liquidatingAgents.includes(agent));
+        const ccbAgents = nonLiquidatingAgents.filter(agent => agent.candidateForCcbLiquidation(timestamp));
         await this.liquidationStrategy.performLiquidations([...liquidatingAgents, ...ccbAgents]);
-        const agentsInCcb = agentCandidates.filter(agent => !liquidatingAgents.includes(agent) && agent.candidateForCcbRegister(timestamp));
+        const agentsInCcb = nonLiquidatingAgents.filter(agent => agent.candidateForCcbRegister(timestamp));
         await this.registerCCBs(agentsInCcb);
     }
 
