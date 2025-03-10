@@ -201,7 +201,7 @@ export class AgentVaultController {
 
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
-    @Get("requestDepositToCV/:fAssetSymbol/:agentVaultAddress/:amount")
+    @Get("requestTransferToCV/:fAssetSymbol/:agentVaultAddress/:amount")
     public async requestDepositToCV(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
