@@ -215,7 +215,9 @@ export class TransactionMonitor implements ITransactionMonitor {
             return false;
         }
         const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
-        logger.error(`Running monitor lock expired for chain ${this.monitoringId} (${elapsed/1000}s since last ping) - stopping monitor.`);
+        if (elapsed >= MONITOR_EXPIRATION_INTERVAL) {
+            logger.error(`Running monitor lock expired for chain ${this.monitoringId} (${elapsed/1000}s since last ping) - stopping monitor.`);
+        }
         return elapsed < MONITOR_EXPIRATION_INTERVAL;
     }
 
