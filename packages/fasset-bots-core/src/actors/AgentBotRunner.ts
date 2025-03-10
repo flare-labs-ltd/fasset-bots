@@ -281,19 +281,22 @@ export class AgentBotRunner {
         while (!this.readyToStop()) {
             try {
                 await sleep(sleepFor);
-                if (this.readyToStop()) return;
+                if (this.readyToStop()) break;
                 for (const [_, monitor] of this.walletMonitors) {
                     const isMonitoring = monitor.isMonitoring();
                     if (!isMonitoring) {
                         logger.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
                         console.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
                         await monitor.startMonitoring();
+                    } else {
+                        logger.info(`Wallet monitoring ${monitor.getId()} is running.`);
                     }
                 }
             } catch (error) {
                 logger.error(`Error ensuring wallet monitoring:`, error);
             }
         }
+        logger.info(`Stopping wallet monitor liveness check.`);
     }
 
     async stopAllWalletMonitoring(): Promise<void> {
