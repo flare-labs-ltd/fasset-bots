@@ -65,8 +65,14 @@ export interface AllBalances {
 }
 
 export interface RequestableVaultCVData {
-    underlyingBalance: string;
-    requestableBalance: string;
+    requestableLotsVault: number;
+    requestableLotsCV: number;
+}
+
+export interface RedeemableVaultCVData {
+    redeemableLotsOwner: number;
+    requestableLotsCV: number;
+    minimumLotsToRedeem: number;
 }
 
 export interface AMGSettings {
@@ -174,4 +180,8 @@ export const requiredKeysForSecrets = ["wallet.encryption_password",
 export interface APIKey {
     key: string;
     hash: string;
+}
+
+export interface TransferToCVFee {
+    fee: string;
 }

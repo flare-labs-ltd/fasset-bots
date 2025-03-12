@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { AMGSettings, APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, DepositableVaultCVData, ExtendedAgentVaultInfo, RequestableVaultCVData, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
+import { AMGSettings, APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, DepositableVaultCVData, ExtendedAgentVaultInfo, RedeemableVaultCVData, RequestableVaultCVData, TransferToCVFee, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO, Alerts, DelegateDTO } from "../../common/AgentSettingsDTO";
@@ -858,11 +858,11 @@ export class AgentService {
     }
 
     async getVaultRequestableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RequestableVaultCVData> {
-        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
-        // amount to mint
-        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
-        const underlyingBalance = formatFixed(toBN(info.underlyingBalanceUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
-        return {underlyingBalance: underlyingBalance, requestableBalance: "22,200"};
+        return {requestableLotsCV: 123, requestableLotsVault: 123};
+    }
+
+    async getVaultRedeemableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RedeemableVaultCVData> {
+        return {redeemableLotsOwner: 123, requestableLotsCV: 123, minimumLotsToRedeem: 10};
     }
 
     async getVaultDepositableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<DepositableVaultCVData> {
@@ -913,6 +913,14 @@ export class AgentService {
     }
 
     async requestCVWithdrawal(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        return;
+    }
+
+    async transferToCVFee(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<TransferToCVFee> {
+        return {fee: "1,500.12"};
+    }
+
+    async redeemFromCV(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
         return;
     }
 

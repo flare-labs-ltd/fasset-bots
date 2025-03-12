@@ -3,7 +3,7 @@ import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } fr
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance, Collaterals, DepositableVaultCVData, RequestableVaultCVData } from "../../common/AgentResponse";
+import { AgentBalance, Collaterals, DepositableVaultCVData, RedeemableVaultCVData, RequestableVaultCVData, TransferToCVFee } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
@@ -212,12 +212,44 @@ export class AgentVaultController {
 
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
-    @Get("requestWithdrawalFromCV/:fAssetSymbol/:agentVaultAddress/:amount")
+    @Get("requestWithdrawalFromCV/:fAssetSymbol/:agentVaultAddress/:lots")
     public async requestWithdrawalFromCV(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
-        @Param("amount") amount: string
+        @Param("lots") lots: string
     ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.requestCVWithdrawal(fAssetSymbol, agentVaultAddress,amount));
+        return handleApiResponse(this.agentService.requestCVWithdrawal(fAssetSymbol, agentVaultAddress,lots));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getCVFee/:fAssetSymbol/:agentVaultAddress/:amount")
+    public async getTransferToCVFee(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<TransferToCVFee>> {
+        return handleApiResponse(this.agentService.transferToCVFee(fAssetSymbol, agentVaultAddress,amount));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getRedeemableCVData/:fAssetSymbol/:agentVaultAddress")
+    public async getRedeemableCVData(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<RedeemableVaultCVData>> {
+        return handleApiResponse(this.agentService.getVaultRedeemableCVData(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("redeemFromCV/:fAssetSymbol/:agentVaultAddress/:lots")
+    public async redeemFromCV(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.redeemFromCV(fAssetSymbol, agentVaultAddress,lots));
     }
 }
