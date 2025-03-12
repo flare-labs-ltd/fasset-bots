@@ -858,11 +858,11 @@ export class AgentService {
     }
 
     async getVaultRequestableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RequestableVaultCVData> {
-        return {requestableLotsCV: 123, requestableLotsVault: 123};
+        return {requestableLotsCV: 123, requestableLotsVault: 123, lotSize: 100};
     }
 
     async getVaultRedeemableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RedeemableVaultCVData> {
-        return {redeemableLotsOwner: 123, requestableLotsCV: 123, minimumLotsToRedeem: 10};
+        return {redeemableLotsOwner: 123, requestableLotsCV: 123, minimumLotsToRedeem: 10, lotSize: 100};
     }
 
     async getVaultDepositableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<DepositableVaultCVData> {

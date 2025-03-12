@@ -67,12 +67,14 @@ export interface AllBalances {
 export interface RequestableVaultCVData {
     requestableLotsVault: number;
     requestableLotsCV: number;
+    lotSize: number;
 }
 
 export interface RedeemableVaultCVData {
     redeemableLotsOwner: number;
     requestableLotsCV: number;
     minimumLotsToRedeem: number;
+    lotSize: number;
 }
 
 export interface AMGSettings {
