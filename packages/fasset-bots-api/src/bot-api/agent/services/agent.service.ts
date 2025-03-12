@@ -870,39 +870,6 @@ export class AgentService {
         // amount to mint
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const underlyingBalance = formatFixed(toBN(info.underlyingBalanceUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
-        /*console.log(info);
-        const settings = await cli.context.assetManager.getSettings();
-        //const vaultCollateral = info.totalVaultCollateralWei;
-        const vaultMinCollateralRatioBIPS = await cli.context.assetManager.getAgentMinVaultCollateralRatioBIPS(agentVaultAddress);
-        const poolMinCollateralRatioBIPS = await cli.context.assetManager.getAgentMinPoolCollateralRatioBIPS(agentVaultAddress);
-        const minLeftBIPS = 0;
-        const tokenPriceReader = await TokenPriceReader.create(settings);
-        const vaultCollateralType = await cli.context.assetManager.getCollateralType(CollateralClass.VAULT, info.vaultCollateralToken);
-        const poolCollateralType = await cli.context.assetManager.getCollateralType(CollateralClass.POOL, await cli.context.assetManager.getWNat());
-        const priceReader = await TokenPriceReader.create(settings);
-        const amgToTokenWei = this.amgToTokenWeiPrice(settings, vaultCollateralType.decimals, (await tokenPriceReader.getPrice(vaultCollateralType.tokenFtsoSymbol)).price,
-        (await tokenPriceReader.getPrice(vaultCollateralType.tokenFtsoSymbol)).decimals, (await tokenPriceReader.getPrice(vaultCollateralType.assetFtsoSymbol)).price, (await tokenPriceReader.getPrice(vaultCollateralType.assetFtsoSymbol)).decimals);
-        const collateralEquivAMG = toBN(info.totalVaultCollateralWei).mul(toBN(10**9)).div(amgToTokenWei);
-        const maxSupportedAMGVault = collateralEquivAMG.mul(toBN(MAX_BIPS)).div(vaultMinCollateralRatioBIPS);
-        const resultWRTvault = maxSupportedAMGVault.mul(toBN(minLeftBIPS)).div(toBN(MAX_BIPS));
-        console.log(collateralEquivAMG.toString());
-        console.log(resultWRTvault.toString());
-
-        const amgToTokenWeiPool = this.amgToTokenWeiPrice(settings, poolCollateralType.decimals, (await tokenPriceReader.getPrice(poolCollateralType.tokenFtsoSymbol)).price,
-        (await tokenPriceReader.getPrice(poolCollateralType.tokenFtsoSymbol)).decimals, (await tokenPriceReader.getPrice(poolCollateralType.assetFtsoSymbol)).price, (await tokenPriceReader.getPrice(poolCollateralType.assetFtsoSymbol)).decimals);
-        const poolcollateralEquivAMG = toBN(info.totalPoolCollateralNATWei).mul(toBN(10**9)).div(amgToTokenWeiPool);
-        const maxSupportedAMGPool = poolcollateralEquivAMG.mul(toBN(MAX_BIPS)).div(poolMinCollateralRatioBIPS);
-        const resultWRTpool = maxSupportedAMGPool.mul(toBN(minLeftBIPS)).div(toBN(MAX_BIPS));
-        console.log(poolcollateralEquivAMG.toString());
-        console.log(resultWRTpool.toString());
-
-        const amgToTokenWeiAGP = this.amgToTokenWeiPrice(settings, poolCollateralType.decimals, (await tokenPriceReader.getPrice(poolCollateralType.tokenFtsoSymbol)).price,
-        (await tokenPriceReader.getPrice(poolCollateralType.tokenFtsoSymbol)).decimals, (await tokenPriceReader.getPrice(poolCollateralType.assetFtsoSymbol)).price, (await tokenPriceReader.getPrice(poolCollateralType.assetFtsoSymbol)).decimals);
-        const AGPcollateralEquivAMG = toBN(info.totalAgentPoolTokensWei).mul(toBN(10**9)).div(amgToTokenWeiAGP);
-        const maxSupportedAMGAGP = AGPcollateralEquivAMG.mul(toBN(MAX_BIPS)).div(poolMinCollateralRatioBIPS);
-        const resultWRTAGP = maxSupportedAMGAGP.mul(toBN(minLeftBIPS)).div(toBN(MAX_BIPS));
-        console.log(AGPcollateralEquivAMG.toString());
-        console.log(resultWRTAGP.toString());*/
         return {underlyingBalance: underlyingBalance, transferableBalance: "12,200"};
     }
 
@@ -924,18 +891,4 @@ export class AgentService {
     async redeemFromCV(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
         return;
     }
-
-    /*amgToTokenWeiPrice(
-        settings: AMGSettings,
-        tokenDecimals: BNish,
-        tokenUSD: BNish,
-        tokenFtsoDecimals: BNish,
-        assetUSD: BNish,
-        assetFtsoDecimals: BNish
-    ): any {
-        // the scale by which token/asset price is divided
-        const tokenScale = exp10(toBN(tokenDecimals).add(toBN(tokenFtsoDecimals)));
-        const assetScale = exp10(toBN(settings.assetMintingDecimals).add(toBN(assetFtsoDecimals)));
-        return toBN(assetUSD).mul(tokenScale).mul(AMG_TOKENWEI_PRICE_SCALE).div(toBN(tokenUSD).mul(assetScale));
-    }*/
 }
