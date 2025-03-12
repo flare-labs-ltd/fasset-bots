@@ -186,4 +186,5 @@ export interface APIKey {
 
 export interface TransferToCVFee {
     fee: string;
+    symbol: string;
 }

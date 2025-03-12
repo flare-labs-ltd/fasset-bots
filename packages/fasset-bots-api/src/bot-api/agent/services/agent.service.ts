@@ -917,7 +917,8 @@ export class AgentService {
     }
 
     async transferToCVFee(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<TransferToCVFee> {
-        return {fee: "1,500.12"};
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        return {fee: "1,500.12", symbol: cli.context.nativeChainInfo.tokenSymbol};
     }
 
     async redeemFromCV(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
