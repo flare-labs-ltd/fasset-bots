@@ -14,7 +14,7 @@ import { web3DeepNormalize, web3Normalize } from "../utils/web3normalize";
 import { CollateralList, isPoolCollateral } from "./CollateralIndexedList";
 import { Prices } from "./Prices";
 import { tokenContract } from "./TokenPrice";
-import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
+import { ExtendedAgentInfo, InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
 
 export const MAX_EVENT_HANDLE_RETRY = 10;
 export const SLEEP_MS_BEFORE_RETRY = 1000;
@@ -406,8 +406,13 @@ export class TrackedState {
         return agent;
     }
 
-    async getAgentInfo(vaultAddress: string): Promise<{ info: AgentInfo, block: number }> {
-        return this.ensureWithinSameBlock(() => this.context.assetManager.getAgentInfo(vaultAddress));
+    async getAgentInfo(vaultAddress: string): Promise<{ info: ExtendedAgentInfo, block: number }> {
+        return this.ensureWithinSameBlock(async () => {
+            return {
+                ...await this.context.assetManager.getAgentInfo(vaultAddress),
+                redemptionPoolFeeShareBIPS: await this.context.assetManager.getAgentSetting(vaultAddress, "redemptionPoolFeeShareBIPS"),
+            }
+        });
     }
 
     async getFassetSupply(): Promise<{ info: BN, block: number }> {

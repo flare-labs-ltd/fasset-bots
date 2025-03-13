@@ -17,6 +17,7 @@ export enum AgentStatus {
 export type AgentSetting =
     | "feeBIPS"
     | "poolFeeShareBIPS"
+    | "redemptionPoolFeeShareBIPS"
     | "mintingVaultCollateralRatioBIPS"
     | "mintingPoolCollateralRatioBIPS"
     | "buyFAssetByAgentFactorBIPS"

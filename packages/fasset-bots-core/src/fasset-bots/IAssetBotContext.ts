@@ -1,4 +1,4 @@
-import { AddressUpdaterInstance, AgentOwnerRegistryInstance, AssetManagerControllerInstance, FAssetInstance, IIAssetManagerInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AgentOwnerRegistryInstance, AssetManagerControllerInstance, CoreVaultManagerInstance, FAssetInstance, IIAssetManagerInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
 import { ChallengerBotStrategyDefinition, LiquidatorBotStrategyDefinition } from "../config";
 import { ChainInfo } from "../fasset/ChainInfo";
 import { NativeChainInfo } from "../fasset/ChainInfo";
@@ -16,6 +16,7 @@ export type FAssetEvents = import("../../typechain-truffle/FAsset").AllEvents;
 export type IERC20Events = import("../../typechain-truffle/IERC20").AllEvents;
 export type IPriceChangeEmitterEvents = import("../../typechain-truffle/IPriceChangeEmitter").AllEvents;
 export type AgentOwnerRegistryEvents = import("../../typechain-truffle/AgentOwnerRegistry").AllEvents;
+export type CoreVaultManagerEvents = import('../../typechain-truffle/CoreVaultManager').AllEvents;
 
 export interface IAssetNativeChainContext {
     fAssetSymbol: string;
@@ -27,6 +28,7 @@ export interface IAssetNativeChainContext {
     assetManagerController: ContractWithEvents<AssetManagerControllerInstance, AssetManagerControllerEvents>;
     addressUpdater: ContractWithEvents<AddressUpdaterInstance, AddressUpdaterEvents>;
     agentOwnerRegistry: ContractWithEvents<AgentOwnerRegistryInstance, AgentOwnerRegistryEvents>;
+    coreVaultManager: ContractWithEvents<CoreVaultManagerInstance, CoreVaultManagerEvents> | undefined;
 }
 
 export interface IAssetAgentContext extends IAssetNativeChainContext {
