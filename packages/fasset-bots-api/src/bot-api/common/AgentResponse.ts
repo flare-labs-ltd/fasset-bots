@@ -172,6 +172,7 @@ export type AgentVaultInfo = BNsToStrings<AgentInfo>
 export type ExtendedAgentVaultInfo = AgentVaultInfo & {
     poolSuffix: string;
     delegates: Delegation[];
+    redemptionPoolFeeShareBIPS: string;
 };
 
 export const requiredKeysForSecrets = ["wallet.encryption_password",
@@ -188,4 +189,9 @@ export interface TransferToCVFee {
     fee: string;
     feeUSD: string;
     symbol: string;
+}
+
+export interface RedemptionQueueData {
+    mintedLots: number;
+    redemptionQueueLots: number;
 }
