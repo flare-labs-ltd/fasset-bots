@@ -30,12 +30,15 @@ import { AvailableAgentsFacetContract } from "./AvailableAgentsFacet";
 import { ChallengesFacetContract } from "./ChallengesFacet";
 import { CollateralReservationsFacetContract } from "./CollateralReservationsFacet";
 import { CollateralTypesFacetContract } from "./CollateralTypesFacet";
+import { CoreVaultFacetContract } from "./CoreVaultFacet";
+import { CoreVaultSettingsFacetContract } from "./CoreVaultSettingsFacet";
 import { EmergencyPauseFacetContract } from "./EmergencyPauseFacet";
 import { EmergencyPauseTransfersFacetContract } from "./EmergencyPauseTransfersFacet";
 import { LiquidationFacetContract } from "./LiquidationFacet";
 import { MintingFacetContract } from "./MintingFacet";
 import { RedemptionConfirmationsFacetContract } from "./RedemptionConfirmationsFacet";
 import { RedemptionDefaultsFacetContract } from "./RedemptionDefaultsFacet";
+import { RedemptionHandshakeFacetContract } from "./RedemptionHandshakeFacet";
 import { RedemptionRequestsFacetContract } from "./RedemptionRequestsFacet";
 import { RedemptionTimeExtensionFacetContract } from "./RedemptionTimeExtensionFacet";
 import { SettingsManagementFacetContract } from "./SettingsManagementFacet";
@@ -55,6 +58,8 @@ import { CollateralPoolContract } from "./CollateralPool";
 import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
 import { CollateralPoolTokenContract } from "./CollateralPoolToken";
 import { CollateralPoolTokenFactoryContract } from "./CollateralPoolTokenFactory";
+import { CoreVaultManagerContract } from "./CoreVaultManager";
+import { CoreVaultManagerProxyContract } from "./CoreVaultManagerProxy";
 import { FtsoV1PriceReaderContract } from "./FtsoV1PriceReader";
 import { FtsoV2PriceStoreContract } from "./FtsoV2PriceStore";
 import { WhitelistContract } from "./Whitelist";
@@ -66,6 +71,7 @@ import { IIAssetManagerContract } from "./IIAssetManager";
 import { IIAssetManagerControllerContract } from "./IIAssetManagerController";
 import { IICollateralPoolContract } from "./IICollateralPool";
 import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
+import { IICoreVaultManagerContract } from "./IICoreVaultManager";
 import { IISettingsManagementContract } from "./IISettingsManagement";
 import { IPriceChangeEmitterContract } from "./IPriceChangeEmitter";
 import { IPricePublisherContract } from "./IPricePublisher";
@@ -85,6 +91,9 @@ import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
 import { FtsoV2PriceStoreMockContract } from "./FtsoV2PriceStoreMock";
+import { MaliciousExecutorContract } from "./MaliciousExecutor";
+import { MaliciousMintExecutorContract } from "./MaliciousMintExecutor";
+import { MaliciousTokenContract } from "./MaliciousToken";
 import { MerkleTreeMockContract } from "./MerkleTreeMock";
 import { MinterMockContract } from "./MinterMock";
 import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
@@ -126,6 +135,9 @@ import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
 import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
+import { ICoreVaultContract } from "./ICoreVault";
+import { ICoreVaultManagerContract } from "./ICoreVaultManager";
+import { ICoreVaultSettingsContract } from "./ICoreVaultSettings";
 import { IFAssetContract } from "./IFAsset";
 import { IRedemptionTimeExtensionContract } from "./IRedemptionTimeExtension";
 import { ITransferFeesContract } from "./ITransferFees";
@@ -138,6 +150,7 @@ import { SafePctMockContract } from "./SafePctMock";
 import { SuicidalMockContract } from "./SuicidalMock";
 import { TestUUPSProxyImplContract } from "./TestUUPSProxyImpl";
 import { TimeCumulativeMockContract } from "./TimeCumulativeMock";
+import { TransfersMockContract } from "./TransfersMock";
 import { IAddressValidityVerificationContract } from "./IAddressValidityVerification";
 import { IBalanceDecreasingTransactionVerificationContract } from "./IBalanceDecreasingTransactionVerification";
 import { IConfirmedBlockHeightExistsVerificationContract } from "./IConfirmedBlockHeightExistsVerification";
@@ -231,6 +244,8 @@ export type * from "./types";
         name: "CollateralReservationsFacet"
       ): CollateralReservationsFacetContract;
       require(name: "CollateralTypesFacet"): CollateralTypesFacetContract;
+      require(name: "CoreVaultFacet"): CoreVaultFacetContract;
+      require(name: "CoreVaultSettingsFacet"): CoreVaultSettingsFacetContract;
       require(name: "EmergencyPauseFacet"): EmergencyPauseFacetContract;
       require(
         name: "EmergencyPauseTransfersFacet"
@@ -241,6 +256,9 @@ export type * from "./types";
         name: "RedemptionConfirmationsFacet"
       ): RedemptionConfirmationsFacetContract;
       require(name: "RedemptionDefaultsFacet"): RedemptionDefaultsFacetContract;
+      require(
+        name: "RedemptionHandshakeFacet"
+      ): RedemptionHandshakeFacetContract;
       require(name: "RedemptionRequestsFacet"): RedemptionRequestsFacetContract;
       require(
         name: "RedemptionTimeExtensionFacet"
@@ -270,6 +288,8 @@ export type * from "./types";
       require(
         name: "CollateralPoolTokenFactory"
       ): CollateralPoolTokenFactoryContract;
+      require(name: "CoreVaultManager"): CoreVaultManagerContract;
+      require(name: "CoreVaultManagerProxy"): CoreVaultManagerProxyContract;
       require(name: "FtsoV1PriceReader"): FtsoV1PriceReaderContract;
       require(name: "FtsoV2PriceStore"): FtsoV2PriceStoreContract;
       require(name: "Whitelist"): WhitelistContract;
@@ -285,6 +305,7 @@ export type * from "./types";
       ): IIAssetManagerControllerContract;
       require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "IICollateralPoolToken"): IICollateralPoolTokenContract;
+      require(name: "IICoreVaultManager"): IICoreVaultManagerContract;
       require(name: "IISettingsManagement"): IISettingsManagementContract;
       require(name: "IPriceChangeEmitter"): IPriceChangeEmitterContract;
       require(name: "IPricePublisher"): IPricePublisherContract;
@@ -308,6 +329,9 @@ export type * from "./types";
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
       require(name: "FtsoV2PriceStoreMock"): FtsoV2PriceStoreMockContract;
+      require(name: "MaliciousExecutor"): MaliciousExecutorContract;
+      require(name: "MaliciousMintExecutor"): MaliciousMintExecutorContract;
+      require(name: "MaliciousToken"): MaliciousTokenContract;
       require(name: "MerkleTreeMock"): MerkleTreeMockContract;
       require(name: "MinterMock"): MinterMockContract;
       require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
@@ -357,6 +381,9 @@ export type * from "./types";
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
       require(name: "ICollateralPool"): ICollateralPoolContract;
       require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
+      require(name: "ICoreVault"): ICoreVaultContract;
+      require(name: "ICoreVaultManager"): ICoreVaultManagerContract;
+      require(name: "ICoreVaultSettings"): ICoreVaultSettingsContract;
       require(name: "IFAsset"): IFAssetContract;
       require(
         name: "IRedemptionTimeExtension"
@@ -371,6 +398,7 @@ export type * from "./types";
       require(name: "SuicidalMock"): SuicidalMockContract;
       require(name: "TestUUPSProxyImpl"): TestUUPSProxyImplContract;
       require(name: "TimeCumulativeMock"): TimeCumulativeMockContract;
+      require(name: "TransfersMock"): TransfersMockContract;
       require(
         name: "IAddressValidityVerification"
       ): IAddressValidityVerificationContract;
@@ -521,6 +549,14 @@ export {
   CollateralTypesFacetInstance,
 } from "./CollateralTypesFacet";
 export {
+  CoreVaultFacetContract,
+  CoreVaultFacetInstance,
+} from "./CoreVaultFacet";
+export {
+  CoreVaultSettingsFacetContract,
+  CoreVaultSettingsFacetInstance,
+} from "./CoreVaultSettingsFacet";
+export {
   EmergencyPauseFacetContract,
   EmergencyPauseFacetInstance,
 } from "./EmergencyPauseFacet";
@@ -541,6 +577,10 @@ export {
   RedemptionDefaultsFacetContract,
   RedemptionDefaultsFacetInstance,
 } from "./RedemptionDefaultsFacet";
+export {
+  RedemptionHandshakeFacetContract,
+  RedemptionHandshakeFacetInstance,
+} from "./RedemptionHandshakeFacet";
 export {
   RedemptionRequestsFacetContract,
   RedemptionRequestsFacetInstance,
@@ -612,6 +652,14 @@ export {
   CollateralPoolTokenFactoryInstance,
 } from "./CollateralPoolTokenFactory";
 export {
+  CoreVaultManagerContract,
+  CoreVaultManagerInstance,
+} from "./CoreVaultManager";
+export {
+  CoreVaultManagerProxyContract,
+  CoreVaultManagerProxyInstance,
+} from "./CoreVaultManagerProxy";
+export {
   FtsoV1PriceReaderContract,
   FtsoV1PriceReaderInstance,
 } from "./FtsoV1PriceReader";
@@ -649,6 +697,10 @@ export {
   IICollateralPoolTokenContract,
   IICollateralPoolTokenInstance,
 } from "./IICollateralPoolToken";
+export {
+  IICoreVaultManagerContract,
+  IICoreVaultManagerInstance,
+} from "./IICoreVaultManager";
 export {
   IISettingsManagementContract,
   IISettingsManagementInstance,
@@ -710,6 +762,18 @@ export {
   FtsoV2PriceStoreMockContract,
   FtsoV2PriceStoreMockInstance,
 } from "./FtsoV2PriceStoreMock";
+export {
+  MaliciousExecutorContract,
+  MaliciousExecutorInstance,
+} from "./MaliciousExecutor";
+export {
+  MaliciousMintExecutorContract,
+  MaliciousMintExecutorInstance,
+} from "./MaliciousMintExecutor";
+export {
+  MaliciousTokenContract,
+  MaliciousTokenInstance,
+} from "./MaliciousToken";
 export {
   MerkleTreeMockContract,
   MerkleTreeMockInstance,
@@ -811,6 +875,15 @@ export {
   ICollateralPoolTokenContract,
   ICollateralPoolTokenInstance,
 } from "./ICollateralPoolToken";
+export { ICoreVaultContract, ICoreVaultInstance } from "./ICoreVault";
+export {
+  ICoreVaultManagerContract,
+  ICoreVaultManagerInstance,
+} from "./ICoreVaultManager";
+export {
+  ICoreVaultSettingsContract,
+  ICoreVaultSettingsInstance,
+} from "./ICoreVaultSettings";
 export { IFAssetContract, IFAssetInstance } from "./IFAsset";
 export {
   IRedemptionTimeExtensionContract,
@@ -841,6 +914,7 @@ export {
   TimeCumulativeMockContract,
   TimeCumulativeMockInstance,
 } from "./TimeCumulativeMock";
+export { TransfersMockContract, TransfersMockInstance } from "./TransfersMock";
 export {
   IAddressValidityVerificationContract,
   IAddressValidityVerificationInstance,
