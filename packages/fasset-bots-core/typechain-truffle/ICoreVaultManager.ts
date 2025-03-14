@@ -67,10 +67,12 @@ export interface PaymentInstructions {
     account: string;
     destination: string;
     amount: BN;
+    paymentReference: string;
     0: BN;
     1: string;
     2: string;
     3: BN;
+    4: string;
   };
 }
 
@@ -240,7 +242,9 @@ export interface ICoreVaultManagerInstance extends Truffle.ContractInstance {
 
   getCancelableTransferRequests(
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{ destinationAddress: string; amount: BN }[]>;
+  ): Promise<
+    { destinationAddress: string; paymentReference: string; amount: BN }[]
+  >;
 
   getEmergencyPauseSenders(
     txDetails?: Truffle.TransactionDetails
@@ -270,7 +274,9 @@ export interface ICoreVaultManagerInstance extends Truffle.ContractInstance {
 
   getNonCancelableTransferRequests(
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{ destinationAddress: string; amount: BN }[]>;
+  ): Promise<
+    { destinationAddress: string; paymentReference: string; amount: BN }[]
+  >;
 
   getPreimageHash(
     _index: number | BN | string,
@@ -503,7 +509,9 @@ export interface ICoreVaultManagerInstance extends Truffle.ContractInstance {
 
     getCancelableTransferRequests(
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ destinationAddress: string; amount: BN }[]>;
+    ): Promise<
+      { destinationAddress: string; paymentReference: string; amount: BN }[]
+    >;
 
     getEmergencyPauseSenders(
       txDetails?: Truffle.TransactionDetails
@@ -533,7 +541,9 @@ export interface ICoreVaultManagerInstance extends Truffle.ContractInstance {
 
     getNonCancelableTransferRequests(
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ destinationAddress: string; amount: BN }[]>;
+    ): Promise<
+      { destinationAddress: string; paymentReference: string; amount: BN }[]
+    >;
 
     getPreimageHash(
       _index: number | BN | string,

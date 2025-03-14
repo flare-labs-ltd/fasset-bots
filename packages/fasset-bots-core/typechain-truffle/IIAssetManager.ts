@@ -322,40 +322,6 @@ export interface CoreVaultRedemptionRequested {
   };
 }
 
-export interface CoreVaultTransferCancelled {
-  name: "CoreVaultTransferCancelled";
-  args: {
-    agentVault: string;
-    transferRedemptionRequestId: BN;
-    0: string;
-    1: BN;
-  };
-}
-
-export interface CoreVaultTransferStarted {
-  name: "CoreVaultTransferStarted";
-  args: {
-    agentVault: string;
-    transferRedemptionRequestId: BN;
-    valueUBA: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
-export interface CoreVaultTransferSuccessful {
-  name: "CoreVaultTransferSuccessful";
-  args: {
-    agentVault: string;
-    transferRedemptionRequestId: BN;
-    valueUBA: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface CurrentUnderlyingBlockUpdated {
   name: "CurrentUnderlyingBlockUpdated";
   args: {
@@ -786,7 +752,9 @@ export interface ReturnFromCoreVaultCancelled {
   name: "ReturnFromCoreVaultCancelled";
   args: {
     agentVault: string;
+    requestId: BN;
     0: string;
+    1: BN;
   };
 }
 
@@ -794,11 +762,13 @@ export interface ReturnFromCoreVaultConfirmed {
   name: "ReturnFromCoreVaultConfirmed";
   args: {
     agentVault: string;
+    requestId: BN;
     receivedUnderlyingUBA: BN;
-    reMintedUBA: BN;
+    remintedUBA: BN;
     0: string;
     1: BN;
     2: BN;
+    3: BN;
   };
 }
 
@@ -806,9 +776,13 @@ export interface ReturnFromCoreVaultRequested {
   name: "ReturnFromCoreVaultRequested";
   args: {
     agentVault: string;
+    requestId: BN;
+    paymentReference: string;
     valueUBA: BN;
     0: string;
     1: BN;
+    2: string;
+    3: BN;
   };
 }
 
@@ -897,6 +871,40 @@ export interface TransferFeesClaimed {
     2: BN;
     3: BN;
     4: BN;
+  };
+}
+
+export interface TransferToCoreVaultCancelled {
+  name: "TransferToCoreVaultCancelled";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface TransferToCoreVaultStarted {
+  name: "TransferToCoreVaultStarted";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface TransferToCoreVaultSuccessful {
+  name: "TransferToCoreVaultSuccessful";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
   };
 }
 
@@ -1004,9 +1012,6 @@ export type AllEvents =
   | CollateralTypeDeprecated
   | ContractChanged
   | CoreVaultRedemptionRequested
-  | CoreVaultTransferCancelled
-  | CoreVaultTransferStarted
-  | CoreVaultTransferSuccessful
   | CurrentUnderlyingBlockUpdated
   | DiamondCut
   | DuplicatePaymentConfirmed
@@ -1051,6 +1056,9 @@ export type AllEvents =
   | TimelockedGovernanceCallExecuted
   | TransferFeeChangeScheduled
   | TransferFeesClaimed
+  | TransferToCoreVaultCancelled
+  | TransferToCoreVaultStarted
+  | TransferToCoreVaultSuccessful
   | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow
   | UnderlyingBalanceToppedUp

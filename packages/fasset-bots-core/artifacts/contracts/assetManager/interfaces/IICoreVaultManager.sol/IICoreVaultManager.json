@@ -7,6 +7,71 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "string",
+          "name": "destinationAddress",
+          "type": "string"
+        }
+      ],
+      "name": "AllowedDestinationAddressAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "destinationAddress",
+          "type": "string"
+        }
+      ],
+      "name": "AllowedDestinationAddressRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "custodianAddress",
+          "type": "string"
+        }
+      ],
+      "name": "CustodianAddressUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "EmergencyPauseSenderAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "EmergencyPauseSenderRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "bytes32",
           "name": "preimageHash",
@@ -122,9 +187,53 @@
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
         }
       ],
       "name": "PaymentInstructions",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "preimageHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "PreimageHashAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "escrowEndTimeSeconds",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint128",
+          "name": "escrowAmount",
+          "type": "uint128"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint128",
+          "name": "minimalAmount",
+          "type": "uint128"
+        }
+      ],
+      "name": "SettingsUpdated",
       "type": "event"
     },
     {
@@ -173,8 +282,47 @@
     },
     {
       "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "triggeringAccount",
+          "type": "address"
+        }
+      ],
+      "name": "TriggeringAccountAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "triggeringAccount",
+          "type": "address"
+        }
+      ],
+      "name": "TriggeringAccountRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
       "inputs": [],
       "name": "Unpaused",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "preimageHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "UnusedPreimageHashRemoved",
       "type": "event"
     },
     {
@@ -434,6 +582,11 @@
               "type": "string"
             },
             {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
               "internalType": "uint128",
               "name": "amount",
               "type": "uint128"
@@ -565,6 +718,11 @@
               "internalType": "string",
               "name": "destinationAddress",
               "type": "string"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
             },
             {
               "internalType": "uint128",
@@ -776,6 +934,11 @@
           "internalType": "string",
           "name": "_destinationAddress",
           "type": "string"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_paymentReference",
+          "type": "bytes32"
         },
         {
           "internalType": "uint128",

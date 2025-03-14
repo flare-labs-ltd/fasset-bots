@@ -14,18 +14,6 @@ export interface RedemptionConfirmationsFacetContract
   ): Promise<RedemptionConfirmationsFacetInstance>;
 }
 
-export interface CoreVaultTransferSuccessful {
-  name: "CoreVaultTransferSuccessful";
-  args: {
-    agentVault: string;
-    transferRedemptionRequestId: BN;
-    valueUBA: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface DustChanged {
   name: "DustChanged";
   args: {
@@ -150,6 +138,18 @@ export interface RedemptionTicketUpdated {
   };
 }
 
+export interface TransferToCoreVaultSuccessful {
+  name: "TransferToCoreVaultSuccessful";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface UnderlyingBalanceChanged {
   name: "UnderlyingBalanceChanged";
   args: {
@@ -173,7 +173,6 @@ export interface UnderlyingBalanceTooLow {
 }
 
 export type AllEvents =
-  | CoreVaultTransferSuccessful
   | DustChanged
   | FullLiquidationStarted
   | LiquidationEnded
@@ -183,6 +182,7 @@ export type AllEvents =
   | RedemptionPerformed
   | RedemptionTicketCreated
   | RedemptionTicketUpdated
+  | TransferToCoreVaultSuccessful
   | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow;
 

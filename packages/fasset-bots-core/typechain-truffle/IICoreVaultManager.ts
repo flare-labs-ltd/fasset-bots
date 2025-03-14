@@ -12,6 +12,46 @@ export interface IICoreVaultManagerContract
   "new"(meta?: Truffle.TransactionDetails): Promise<IICoreVaultManagerInstance>;
 }
 
+export interface AllowedDestinationAddressAdded {
+  name: "AllowedDestinationAddressAdded";
+  args: {
+    destinationAddress: string;
+    0: string;
+  };
+}
+
+export interface AllowedDestinationAddressRemoved {
+  name: "AllowedDestinationAddressRemoved";
+  args: {
+    destinationAddress: string;
+    0: string;
+  };
+}
+
+export interface CustodianAddressUpdated {
+  name: "CustodianAddressUpdated";
+  args: {
+    custodianAddress: string;
+    0: string;
+  };
+}
+
+export interface EmergencyPauseSenderAdded {
+  name: "EmergencyPauseSenderAdded";
+  args: {
+    sender: string;
+    0: string;
+  };
+}
+
+export interface EmergencyPauseSenderRemoved {
+  name: "EmergencyPauseSenderRemoved";
+  args: {
+    sender: string;
+    0: string;
+  };
+}
+
 export interface EscrowFinished {
   name: "EscrowFinished";
   args: {
@@ -67,10 +107,32 @@ export interface PaymentInstructions {
     account: string;
     destination: string;
     amount: BN;
+    paymentReference: string;
     0: BN;
     1: string;
     2: string;
     3: BN;
+    4: string;
+  };
+}
+
+export interface PreimageHashAdded {
+  name: "PreimageHashAdded";
+  args: {
+    preimageHash: string;
+    0: string;
+  };
+}
+
+export interface SettingsUpdated {
+  name: "SettingsUpdated";
+  args: {
+    escrowEndTimeSeconds: BN;
+    escrowAmount: BN;
+    minimalAmount: BN;
+    0: BN;
+    1: BN;
+    2: BN;
   };
 }
 
@@ -96,21 +158,55 @@ export interface TransferRequested {
   };
 }
 
+export interface TriggeringAccountAdded {
+  name: "TriggeringAccountAdded";
+  args: {
+    triggeringAccount: string;
+    0: string;
+  };
+}
+
+export interface TriggeringAccountRemoved {
+  name: "TriggeringAccountRemoved";
+  args: {
+    triggeringAccount: string;
+    0: string;
+  };
+}
+
 export interface Unpaused {
   name: "Unpaused";
   args: {};
 }
 
+export interface UnusedPreimageHashRemoved {
+  name: "UnusedPreimageHashRemoved";
+  args: {
+    preimageHash: string;
+    0: string;
+  };
+}
+
 export type AllEvents =
+  | AllowedDestinationAddressAdded
+  | AllowedDestinationAddressRemoved
+  | CustodianAddressUpdated
+  | EmergencyPauseSenderAdded
+  | EmergencyPauseSenderRemoved
   | EscrowFinished
   | EscrowInstructions
   | NotAllEscrowsProcessed
   | Paused
   | PaymentConfirmed
   | PaymentInstructions
+  | PreimageHashAdded
+  | SettingsUpdated
   | TransferRequestCanceled
   | TransferRequested
-  | Unpaused;
+  | TriggeringAccountAdded
+  | TriggeringAccountRemoved
+  | Unpaused
+  | UnusedPreimageHashRemoved;
 
 export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
   availableFunds(txDetails?: Truffle.TransactionDetails): Promise<BN>;
@@ -283,7 +379,9 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
 
   getCancelableTransferRequests(
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{ destinationAddress: string; amount: BN }[]>;
+  ): Promise<
+    { destinationAddress: string; paymentReference: string; amount: BN }[]
+  >;
 
   getEmergencyPauseSenders(
     txDetails?: Truffle.TransactionDetails
@@ -313,7 +411,9 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
 
   getNonCancelableTransferRequests(
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{ destinationAddress: string; amount: BN }[]>;
+  ): Promise<
+    { destinationAddress: string; paymentReference: string; amount: BN }[]
+  >;
 
   getPreimageHash(
     _index: number | BN | string,
@@ -386,24 +486,28 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
   requestTransferFromCoreVault: {
     (
       _destinationAddress: string,
+      _paymentReference: string,
       _amount: number | BN | string,
       _cancelable: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _destinationAddress: string,
+      _paymentReference: string,
       _amount: number | BN | string,
       _cancelable: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _destinationAddress: string,
+      _paymentReference: string,
       _amount: number | BN | string,
       _cancelable: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _destinationAddress: string,
+      _paymentReference: string,
       _amount: number | BN | string,
       _cancelable: boolean,
       txDetails?: Truffle.TransactionDetails
@@ -592,7 +696,9 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
 
     getCancelableTransferRequests(
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ destinationAddress: string; amount: BN }[]>;
+    ): Promise<
+      { destinationAddress: string; paymentReference: string; amount: BN }[]
+    >;
 
     getEmergencyPauseSenders(
       txDetails?: Truffle.TransactionDetails
@@ -622,7 +728,9 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
 
     getNonCancelableTransferRequests(
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ destinationAddress: string; amount: BN }[]>;
+    ): Promise<
+      { destinationAddress: string; paymentReference: string; amount: BN }[]
+    >;
 
     getPreimageHash(
       _index: number | BN | string,
@@ -695,24 +803,28 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
     requestTransferFromCoreVault: {
       (
         _destinationAddress: string,
+        _paymentReference: string,
         _amount: number | BN | string,
         _cancelable: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _destinationAddress: string,
+        _paymentReference: string,
         _amount: number | BN | string,
         _cancelable: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _destinationAddress: string,
+        _paymentReference: string,
         _amount: number | BN | string,
         _cancelable: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _destinationAddress: string,
+        _paymentReference: string,
         _amount: number | BN | string,
         _cancelable: boolean,
         txDetails?: Truffle.TransactionDetails

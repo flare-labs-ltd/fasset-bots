@@ -122,6 +122,12 @@
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
         }
       ],
       "name": "PaymentInstructions",
@@ -377,6 +383,11 @@
               "type": "string"
             },
             {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
               "internalType": "uint128",
               "name": "amount",
               "type": "uint128"
@@ -508,6 +519,11 @@
               "internalType": "string",
               "name": "destinationAddress",
               "type": "string"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
             },
             {
               "internalType": "uint128",

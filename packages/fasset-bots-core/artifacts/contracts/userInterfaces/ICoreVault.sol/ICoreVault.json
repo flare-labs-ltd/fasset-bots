@@ -40,71 +40,8 @@
         {
           "indexed": true,
           "internalType": "uint256",
-          "name": "transferRedemptionRequestId",
+          "name": "requestId",
           "type": "uint256"
-        }
-      ],
-      "name": "CoreVaultTransferCancelled",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "transferRedemptionRequestId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "valueUBA",
-          "type": "uint256"
-        }
-      ],
-      "name": "CoreVaultTransferStarted",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "transferRedemptionRequestId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "valueUBA",
-          "type": "uint256"
-        }
-      ],
-      "name": "CoreVaultTransferSuccessful",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
         }
       ],
       "name": "ReturnFromCoreVaultCancelled",
@@ -120,6 +57,12 @@
           "type": "address"
         },
         {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        },
+        {
           "indexed": false,
           "internalType": "uint256",
           "name": "receivedUnderlyingUBA",
@@ -128,7 +71,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "reMintedUBA",
+          "name": "remintedUBA",
           "type": "uint256"
         }
       ],
@@ -145,6 +88,18 @@
           "type": "address"
         },
         {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
+        },
+        {
           "indexed": false,
           "internalType": "uint256",
           "name": "valueUBA",
@@ -152,6 +107,75 @@
         }
       ],
       "name": "ReturnFromCoreVaultRequested",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "transferRedemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferToCoreVaultCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "transferRedemptionRequestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferToCoreVaultStarted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "transferRedemptionRequestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferToCoreVaultSuccessful",
       "type": "event"
     },
     {
