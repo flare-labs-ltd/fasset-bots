@@ -1,11 +1,11 @@
 import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentInfoReader, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, createBotOrm, loadAgentConfigFile, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, exp10, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
+import { AMGSettings, APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, DepositableVaultCVData, ExtendedAgentVaultInfo, RedeemableVaultCVData, RedemptionQueueData, RequestableVaultCVData, TransferToCVFee, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO, Alerts, DelegateDTO } from "../../common/AgentSettingsDTO";
@@ -16,6 +16,7 @@ import { Alert } from "../../common/entities/AlertDB";
 import { ORM } from "../../../../../fasset-bots-core/src/config/orm";
 import BN from "bn.js";
 import { cachedSecrets } from "../agentServer";
+import * as cron from "node-cron";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -23,6 +24,7 @@ const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20Metadata = artifacts.require("IERC20Metadata");
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
+const AMG_TOKENWEI_PRICE_SCALE = toBNExp(1, 9);
 // const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
 
 @Injectable()
@@ -30,6 +32,10 @@ export class AgentService {
     public orm!: ORM;
     private infoBotMap: Map<string, AgentBotCommands> = new Map();
     public secrets!: Secrets;
+    private mintedLots: number = -1;
+    private redemptionQueueLots: number = -1;
+    private fxrpSymbol: string = "";
+    private isRunning: boolean = false;
     constructor(
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private readonly em: EntityManager,
@@ -44,6 +50,9 @@ export class AgentService {
             if (f === "FSimCoinX") {
                 continue;
             }
+            if (f.includes("XRP")){
+                this.fxrpSymbol = f;
+            }
             const underlyingAddress = cachedSecrets.optional(`owner.${config.fAssets[f].tokenSymbol}.address`);
             if (!underlyingAddress) {
                 continue;
@@ -52,6 +61,22 @@ export class AgentService {
         }
         this.secrets = cachedSecrets;
         this.orm = await createBotOrm("agent", configFile.ormOptions, this.secrets.data.database) as ORM;
+        this.mintedLots = -1;
+        this.redemptionQueueLots = -1;
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        cron.schedule("*/1 * * * *", async () => {
+            if (!this.isRunning) {
+                this.isRunning = true;
+                try {
+                    console.log("Updating queue");
+                    await this.updateRedemptionQueue();
+                } catch (error) {
+                    //logger.error(`'Error running getPools:`, error);
+                } finally {
+                    this.isRunning = false;
+                }
+            }
+        });
     }
 
     async createAgent(fAssetSymbol: string, agentSettings: AgentSettingsConfig): Promise<AgentCreateResponse | null> {
@@ -328,6 +353,7 @@ export class AgentService {
         }
         agentVaultInfo.vaultCollateralToken = collateralToken.tokenFtsoSymbol;
         agentVaultInfo.poolSuffix = tokenSymbol;
+        agentVaultInfo.redemptionPoolFeeShareBIPS = "20";
         const del = await cli.context.wNat.delegatesOf(info.collateralPool);
         const delegates: Delegation [] = [];
         let delegationPercentage = 0;
@@ -641,7 +667,8 @@ export class AgentService {
                     totalPoolCollateralUSD = toBN(info.totalPoolCollateralNATWei).mul(priceUSD).div(toBNExp(1, 18 + Number(cflrPrice.decimals)));
                     prices.push({ symbol: vaultCollateralType.tokenFtsoSymbol, price: priceVaultUSD, decimals: Number(priceVault.decimals) });
                 }
-                const totalCollateralUSD = formatFixed(totalVaultCollateralUSD.add(totalPoolCollateralUSD), 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+                const totalCollateralUSDPool = formatFixed(totalPoolCollateralUSD, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+                const totalCollateralUSDVault = formatFixed(totalVaultCollateralUSD, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
                 const feeShare = Number(info.poolFeeShareBIPS) / MAX_BIPS;
                 const assetManager = cli.context.assetManager;
                 const air = await AgentInfoReader.create(assetManager, vault.vaultAddress);
@@ -660,7 +687,7 @@ export class AgentService {
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     collateralToken: info.vaultCollateralToken, health: status,
-                    poolCollateralUSD: totalCollateralUSD,
+                    poolCollateralUSD: totalCollateralUSDPool,
                     mintCount: "0",
                     poolFee: (feeShare * 100).toString(),
                     fasset: fasset,
@@ -670,6 +697,11 @@ export class AgentService {
                     handshakeType: Number(info.handshakeType),
                     delegates: delegates,
                     delegationPercentage: delegationPercentage.toString(),
+                    allLots: (Number(info.freeCollateralLots) + mintedLots).toString(),
+                    transferableToCV: "10,200.24",
+                    underlyingSymbol: cli.context.chainInfo.symbol,
+                    transferableFromCV: "10,200.24",
+                    redeemCapacity: (Number(info.mintedUBA)/lotSize).toString()
                 };
                 allVaults.push(vaultInfo);
             }
@@ -849,4 +881,83 @@ export class AgentService {
         }
         return {balance: balanceFormatted, symbol: cli.context.fAssetSymbol};
     }
+
+    async getVaultRequestableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RequestableVaultCVData> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const settings = await cli.context.assetManager.getSettings();
+        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const lotSizeAsset = lotSize.toNumber() / 10 ** Number(settings.assetDecimals);
+        return {requestableLotsCV: 123, requestableLotsVault: Number(info.freeCollateralLots), lotSize: lotSizeAsset};
+    }
+
+    async getVaultRedeemableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RedeemableVaultCVData> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        const settings = await cli.context.assetManager.getSettings();
+        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const lotSizeAsset = lotSize.toNumber() / 10 ** Number(settings.assetDecimals);
+        const ownerAddress = this.secrets.optional(`owner.native.address`);
+        let ownerLots = toBN(0);
+        if (ownerAddress) {
+            const fassetBalance = await cli.context.fAsset.balanceOf(ownerAddress);
+            ownerLots = fassetBalance.div(lotSize);
+        }
+        return {redeemableLotsOwner: ownerLots.toNumber(), requestableLotsCV: 123, minimumLotsToRedeem: 10, lotSize: lotSizeAsset};
+    }
+
+    async getVaultDepositableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<DepositableVaultCVData> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        // amount to mint
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const underlyingBalance = formatFixed(toBN(info.underlyingBalanceUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        return {underlyingBalance: underlyingBalance, transferableBalance: "12,200"};
+    }
+
+    //minimumRemainingAfterTransferForCollateralAMG(minBIPS: BN, )
+
+    async requestCVDeposit(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        return;
+    }
+
+    async requestCVWithdrawal(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        return;
+    }
+
+    async transferToCVFee(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<TransferToCVFee> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        const settings = await cli.context.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        const cflrPrice = await priceReader.getPrice(cli.context.nativeChainInfo.tokenSymbol, false, settings.maxTrustedPriceAgeSeconds);
+        const priceUSD = cflrPrice.price.mul(toBNExp(1, 18));
+        const feeWei = toBNExp(123,18);
+        const feeCvUsd = toBN(feeWei).mul(priceUSD).div(toBNExp(1, 18 + Number(cflrPrice.decimals)));
+        return {fee: "1,500.12", symbol: cli.context.nativeChainInfo.tokenSymbol, feeUSD: formatFixed(feeCvUsd, 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
+    }
+
+    async redeemFromCV(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
+        return;
+    }
+
+    async updateRedemptionQueue(): Promise<void> {
+        const cli = this.infoBotMap.get(this.fxrpSymbol) as AgentBotCommands;
+        const fSupply = await cli.context.fAsset.totalSupply();
+        const settings = await cli.context.assetManager.getSettings();
+        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const mintedLots = fSupply.div(lotSize);
+        let redemptionQueueSize = toBN(0);
+        let redemptionQueue = await cli.context.assetManager.redemptionQueue(0, 20);
+        redemptionQueueSize = redemptionQueue[0].reduce((acc, num) => acc.add(toBN(num.ticketValueUBA)), toBN(0));
+        while (toBN(redemptionQueue[1]).toString() != "0") {
+            redemptionQueue = await cli.context.assetManager.redemptionQueue(toBN(redemptionQueue[1]).toString(), 20);
+            redemptionQueueSize = redemptionQueueSize.add(redemptionQueue[0].reduce((acc, num) => acc.add(toBN(num.ticketValueUBA)), toBN(0)));
+        }
+        const redemptionQueueLots = redemptionQueueSize.div(toBN(lotSize));
+        this.mintedLots = mintedLots.toNumber();
+        this.redemptionQueueLots = redemptionQueueLots.toNumber();
+    }
+
+    async getRedemptionQueueData(): Promise<RedemptionQueueData> {
+        return {mintedLots: this.mintedLots, redemptionQueueLots: this.redemptionQueueLots};
+    }
+
 }

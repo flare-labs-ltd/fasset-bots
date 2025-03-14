@@ -3,7 +3,7 @@ import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } fr
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance, Collaterals } from "../../common/AgentResponse";
+import { AgentBalance, Collaterals, DepositableVaultCVData, RedeemableVaultCVData, RequestableVaultCVData, TransferToCVFee } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
@@ -177,5 +177,79 @@ export class AgentVaultController {
         @Param("agentVaultAddress") agentVaultAddress: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.getSelfMintFromFreeUnderlyingBalances(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getTransferableCVData/:fAssetSymbol/:agentVaultAddress")
+    public async getAgentTransferableCVData(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<DepositableVaultCVData>> {
+        return handleApiResponse(this.agentService.getVaultDepositableCVData(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getRequestableCVData/:fAssetSymbol/:agentVaultAddress")
+    public async getAgentCVData(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<RequestableVaultCVData>> {
+        return handleApiResponse(this.agentService.getVaultRequestableCVData(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("requestTransferToCV/:fAssetSymbol/:agentVaultAddress/:amount")
+    public async requestDepositToCV(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.requestCVDeposit(fAssetSymbol, agentVaultAddress,amount));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("requestWithdrawalFromCV/:fAssetSymbol/:agentVaultAddress/:lots")
+    public async requestWithdrawalFromCV(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.requestCVWithdrawal(fAssetSymbol, agentVaultAddress,lots));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getCVFee/:fAssetSymbol/:agentVaultAddress/:amount")
+    public async getTransferToCVFee(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<TransferToCVFee>> {
+        return handleApiResponse(this.agentService.transferToCVFee(fAssetSymbol, agentVaultAddress,amount));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getRedeemableCVData/:fAssetSymbol/:agentVaultAddress")
+    public async getRedeemableCVData(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<RedeemableVaultCVData>> {
+        return handleApiResponse(this.agentService.getVaultRedeemableCVData(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("redeemFromCV/:fAssetSymbol/:agentVaultAddress/:lots")
+    public async redeemFromCV(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.redeemFromCV(fAssetSymbol, agentVaultAddress,lots));
     }
 }

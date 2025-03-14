@@ -3,7 +3,7 @@ import { Body, Controller, Get, Param, Post, Query, UseGuards, UseInterceptors }
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllBalances, AllCollaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllBalances, AllCollaterals, ExtendedAgentVaultInfo, RedemptionQueueData, UnderlyingAddress, VaultCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { AgentSettingsService } from "../services/agentSettings.service";
 import { AgentSettingsConfigDTO } from "../../common/AgentSettingsConfigDTO";
@@ -519,5 +519,12 @@ export class AgentController {
     @Get("ownerFassetBalance/:fAssetSymbol")
         public async ownerFassetBalance(@Param("fAssetSymbol") fAssetSymbol: string): Promise<ApiResponseWrapper<AllBalances>> {
             return handleApiResponse(this.agentService.getOwnerFassetBalance(fAssetSymbol));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getRedemptionQueueData")
+        public async redemptionQueueData(): Promise<ApiResponseWrapper<RedemptionQueueData>> {
+            return handleApiResponse(this.agentService.getRedemptionQueueData());
     }
 }

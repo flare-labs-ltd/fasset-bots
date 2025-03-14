@@ -64,6 +64,29 @@ export interface AllBalances {
     wrapped?: string;
 }
 
+export interface RequestableVaultCVData {
+    requestableLotsVault: number;
+    requestableLotsCV: number;
+    lotSize: number;
+}
+
+export interface RedeemableVaultCVData {
+    redeemableLotsOwner: number;
+    requestableLotsCV: number;
+    minimumLotsToRedeem: number;
+    lotSize: number;
+}
+
+export interface AMGSettings {
+    assetMintingDecimals: BNish;
+    assetMintingGranularityUBA: BNish;
+}
+
+export interface DepositableVaultCVData {
+    underlyingBalance: string;
+    transferableBalance: string;
+}
+
 export interface UnderlyingAddress {
     asset: string;
     address: string;
@@ -95,9 +118,9 @@ export interface VaultInfo {
     agentCPTs: string;
     collateralToken: string;
     health: string;
-    poolCollateralUSD: string,
-    mintCount: string,
-    poolFee: string,
+    poolCollateralUSD: string;
+    mintCount: string;
+    poolFee: string;
     createdAt: number;
     fasset: string;
     lotsPoolBacked: string;
@@ -105,6 +128,11 @@ export interface VaultInfo {
     handshakeType: number;
     delegates: Delegation[];
     delegationPercentage: string;
+    allLots: string;
+    transferableToCV: string;
+    underlyingSymbol: string;
+    redeemCapacity: string;
+    transferableFromCV: string;
 }
 
 export interface AllVaults {
@@ -144,6 +172,7 @@ export type AgentVaultInfo = BNsToStrings<AgentInfo>
 export type ExtendedAgentVaultInfo = AgentVaultInfo & {
     poolSuffix: string;
     delegates: Delegation[];
+    redemptionPoolFeeShareBIPS: string;
 };
 
 export const requiredKeysForSecrets = ["wallet.encryption_password",
@@ -154,4 +183,15 @@ export const requiredKeysForSecrets = ["wallet.encryption_password",
 export interface APIKey {
     key: string;
     hash: string;
+}
+
+export interface TransferToCVFee {
+    fee: string;
+    feeUSD: string;
+    symbol: string;
+}
+
+export interface RedemptionQueueData {
+    mintedLots: number;
+    redemptionQueueLots: number;
 }
