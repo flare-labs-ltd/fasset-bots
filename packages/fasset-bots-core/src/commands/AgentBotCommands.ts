@@ -37,6 +37,11 @@ const IERC20 = artifacts.require("IERC20Metadata");
 
 type CleanupRegistration = (handler: () => Promise<void>) => void;
 
+export interface MaximumTransferToCoreVaultResult {
+    maximumTransferUBA: BN;
+    minimumLeftAmountUBA: BN;
+}
+
 export class AgentBotCommands {
     static deepCopyWithObjectCreate = true;
 
@@ -822,5 +827,69 @@ export class AgentBotCommands {
     async underlyingTopUp(agentVault: string, amountUBA: BN) {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.underlyingManagement.underlyingTopUp(this.orm.em, amountUBA);
+    }
+
+
+    /**
+     * @param agentVault agent's vault address
+     * @param amount amount to be transferred
+     */
+    async transferToCoreVault(agentVault: string, amount: string | BN): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to transfer underlying to core vault.`);
+        const { agentBot } = await this.getAgentBot(agentVault);
+        // check that amount is not too high (we don't want the agent to go to full liquidation)
+        const allowedToSend = this.getMaximumTransferToCoreVault(agentVault);
+        if (toBN(amount).gt((await allowedToSend).maximumTransferUBA)) {
+            const currency = await Currencies.fassetUnderlyingToken(this.context);
+            logger.error(`Agent ${agentVault} cannot transfer funds. Requested amount ${currency.formatValue(amount)} is higher than allowed ${currency.formatValue((await allowedToSend).maximumTransferUBA)}.`);
+            throw new CommandLineError(`Cannot transfer funds. Requested amount ${currency.formatValue(amount)} is higher than allowed ${currency.formatValue((await allowedToSend).maximumTransferUBA)}.`);
+        }
+        // get fee
+        const fee = await this.context.assetManager.transferToCoreVaultFee(amount);
+        // request transfer
+        await this.context.assetManager.transferToCoreVault(agentVault, amount,  { from: agentBot.agent.owner.workAddress, value: fee });
+        logger.info(`Agent ${agentVault} successfully initiated transfer of underlying to core vault.`);
+    }
+
+    /**
+     * @param agentVault agent's vault address
+     */
+    async cancelTransferToCoreVault(agentVault: string): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to cancel transferring of underlying to core vault.`);
+        const { agentBot } = await this.getAgentBot(agentVault);
+        // cancel transfer
+        await this.context.assetManager.cancelTransferToCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
+        logger.info(`Agent ${agentVault} successfully cancelled transfer of underlying to core vault.`);
+    }
+
+    /**
+     * @param agentVault agent's vault address
+     * @returns maximal amount to transfer and minimum amount to be left on underlying
+     */
+    async getMaximumTransferToCoreVault(agentVault: string): Promise<MaximumTransferToCoreVaultResult> {
+        const allowed = await this.context.assetManager.maximumTransferToCoreVault(agentVault);
+        return { maximumTransferUBA: allowed[0], minimumLeftAmountUBA: allowed[1] };
+    }
+
+    /**
+     * @param agentVault agent's vault address
+     * @param lots lots to receive
+     */
+    async returnFromCoreVault(agentVault: string, lots: string | BN): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to request return of underlying from core vault.`);
+        const { agentBot } = await this.getAgentBot(agentVault);
+        await this.context.assetManager.requestReturnFromCoreVault(agentVault, lots,  { from: agentBot.agent.owner.workAddress });
+        logger.info(`Agent ${agentVault} successfully initiated return of underlying from core vault.`);
+    }
+
+    /**
+     * @param agentVault agent's vault address
+     */
+    async cancelReturnFromCoreVault(agentVault: string): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to cancel return of underlying from core vault.`);
+        const { agentBot } = await this.getAgentBot(agentVault);
+        // cancel return
+        await this.context.assetManager.cancelReturnFromCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
+        logger.info(`Agent ${agentVault} successfully cancelled return of underlying from core vault.`);
     }
 }
