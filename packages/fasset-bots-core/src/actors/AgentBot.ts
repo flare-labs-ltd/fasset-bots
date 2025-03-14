@@ -495,11 +495,11 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "AgentPing")) {
             await this.handleAgentPing(event.args);
         } // core vault events
-            else if (eventIs(event, this.context.assetManager, "CoreVaultTransferStarted")) {
+            else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultStarted")) {
             await this.transferToCoreVault.transferToCoreVaultStarted(em, event.args);
-        } else if (eventIs(event, this.context.assetManager, "CoreVaultTransferCancelled")) {
+        } else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultCancelled")) {
             await this.transferToCoreVault.transferToCoreVaultCancelled(em, event.args);
-        } else if (eventIs(event, this.context.assetManager, "CoreVaultTransferSuccessful")) {
+        } else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultSuccessful")) {
             await this.transferToCoreVault.transferToCoreVaultPerformed(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultRequested")) {
             await this.returnFromCoreVault.returnFromCoreVaultStarted(em, event.args);

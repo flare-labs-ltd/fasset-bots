@@ -1,6 +1,6 @@
 import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { CoreVaultTransferCancelled, CoreVaultTransferStarted } from "../../typechain-truffle/IIAssetManager";
+import { TransferToCoreVaultCancelled, TransferToCoreVaultStarted } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { TransferToCoreVault } from "../entities/agent";
 import { TransferToCoreVaultState } from "../entities/common";
@@ -10,7 +10,7 @@ import { toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentBot } from "./AgentBot";
-import { CoreVaultTransferSuccessful } from "../../typechain-truffle/CoreVaultFacet";
+import { TransferToCoreVaultSuccessful } from "../../typechain-truffle/CoreVaultFacet";
 
 export class AgentBotTransferToCoreVault {
     static deepCopyWithObjectCreate = true;
@@ -28,7 +28,7 @@ export class AgentBotTransferToCoreVault {
      * @param em entity manager
      * @param request event's CoreVaultTransferStarted arguments
      */
-    async transferToCoreVaultStarted(rootEm: EM, request: EventArgs<CoreVaultTransferStarted>): Promise<void> {
+    async transferToCoreVaultStarted(rootEm: EM, request: EventArgs<TransferToCoreVaultStarted>): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             em.create(
                 TransferToCoreVault,
@@ -45,7 +45,7 @@ export class AgentBotTransferToCoreVault {
         logger.info(`Agent ${this.agent.vaultAddress} started transfer to core vault ${request.transferRedemptionRequestId}.`);
     }
 
-    async transferToCoreVaultPerformed(rootEm: EM, args: EventArgs<CoreVaultTransferSuccessful>) {
+    async transferToCoreVaultPerformed(rootEm: EM, args: EventArgs<TransferToCoreVaultSuccessful>) {
         await this.updateTransferToCoreVault(rootEm, args.transferRedemptionRequestId, {
             state: TransferToCoreVaultState.DONE,
         });
@@ -53,7 +53,7 @@ export class AgentBotTransferToCoreVault {
         await this.notifier.sendTransferToCVPerformed(args.transferRedemptionRequestId);
     }
 
-    async transferToCoreVaultCancelled(rootEm: EM, args: EventArgs<CoreVaultTransferCancelled>) {
+    async transferToCoreVaultCancelled(rootEm: EM, args: EventArgs<TransferToCoreVaultCancelled>) {
         await this.updateTransferToCoreVault(rootEm, args.transferRedemptionRequestId, {
             state: TransferToCoreVaultState.DONE,
             cancelled: true
