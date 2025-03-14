@@ -38,6 +38,7 @@ import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 import { AgentBotHandshake } from "./AgentBotHandshake";
 import { HandshakeAddressVerifier } from "./plugins/HandshakeAddressVerifier";
+import { AgentBotTransferToCoreVault } from "./AgentBotTransferToCoreVault";
 
 const PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS = 2 * MINUTES * 1000;
 
@@ -117,6 +118,7 @@ export class AgentBot {
     collateralWithdrawal = new AgentBotCollateralWithdrawal(this);
     claims = new AgentBotClaims(this);
     closing = new AgentBotClosing(this);
+    transferToCoreVault = new AgentBotTransferToCoreVault(this, this.agent, this.notifier);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -490,6 +492,13 @@ export class AgentBot {
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash);
         } else if (eventIs(event, this.context.assetManager, "AgentPing")) {
             await this.handleAgentPing(event.args);
+        } // core vault events
+            else if (eventIs(event, this.context.assetManager, "CoreVaultTransferStarted")) {
+            await this.transferToCoreVault.transferToCoreVaultStarted(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CoreVaultTransferCancelled")) {
+            await this.transferToCoreVault.transferToCoreVaultCancelled(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CoreVaultTransferSuccessful")) {
+            await this.transferToCoreVault.transferToCoreVaultPerformed(em, event.args);
         }
     }
 
