@@ -504,9 +504,9 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultRequested")) {
             await this.returnFromCoreVault.returnFromCoreVaultStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultCancelled")) {
-            await this.returnFromCoreVault.returnFromCoreVaultCancelled(em);
+            await this.returnFromCoreVault.returnFromCoreVaultCancelled(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultConfirmed")) {
-            await this.returnFromCoreVault.returnFromCoreVaultConfirmed(em);
+            await this.returnFromCoreVault.returnFromCoreVaultConfirmed(em, event.args);
         }
     }
 

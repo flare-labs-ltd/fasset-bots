@@ -633,32 +633,32 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendReturnFromCVStarted() {
-        await this.info(AgentNotificationKey.RETURN_FROM_CV_STARTED, `Return from core vault started for ${this.address}.`);
+    async sendReturnFromCVStarted(requestId: string) {
+        await this.info(AgentNotificationKey.RETURN_FROM_CV_STARTED, `Return from core vault ${requestId} started for ${this.address}.`);
     }
 
-    async sendReturnFromCVCancelled() {
+    async sendReturnFromCVCancelled(requestId: string) {
         await this.info(
             AgentNotificationKey.RETURN_FROM_CV_CANCELLED,
-            `Return from core vault was cancelled for agent ${this.address}.`
+            `Return from core vault ${requestId} was cancelled for agent ${this.address}.`
         );
     }
 
-    async sendReturnFromCVPerformed() {
+    async sendReturnFromCVPerformed(requestId: string) {
         await this.info(
             AgentNotificationKey.RETURN_FROM_CV_PERFORMED,
-            `Return from core vault was successful for agent ${this.address}.`
+            `Return from core vault ${requestId} was successful for agent ${this.address}.`
         );
     }
 
-    async sendReturnFromCVRequestPaymentProof(id: string, reference: string) {
-        await this.info(AgentNotificationKey.RETURN_FROM_CV_PAYMENT_PROOF, `Payment proof for return from core vault ${id} (${reference}) was requested for ${this.address}.`);
+    async sendReturnFromCVRequestPaymentProof(requestId: string, reference: string) {
+        await this.info(AgentNotificationKey.RETURN_FROM_CV_PAYMENT_PROOF, `Payment proof for return from core vault ${requestId} (${reference}) was requested for ${this.address}.`);
     }
 
-    async sendReturnFromCVNoProofObtained(id: number, roundId: number, requestData: string) {
+    async sendReturnFromCVNoProofObtained(requestId: string, roundId: number, requestData: string) {
         await this.danger(
             AgentNotificationKey.RETURN_FROM_CVN_NO_PROOF_OBTAINED,
-            `Agent ${this.address} cannot obtain proof for return from core vault ${id} in round ${roundId} with requested data ${requestData}.`
+            `Agent ${this.address} cannot obtain proof for return from core vault ${requestId} in round ${roundId} with requested data ${requestData}.`
         );
     }
 }

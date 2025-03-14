@@ -489,6 +489,9 @@ export class ReturnFromCoreVault {
     @Property({ type: BNType })
     valueUBA!: BN;
 
+    @Property({ type: BNType })
+    requestId!: BN;
+
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 
