@@ -63,6 +63,7 @@ export class AgentService {
         this.orm = await createBotOrm("agent", configFile.ormOptions, this.secrets.data.database) as ORM;
         this.mintedLots = -1;
         this.redemptionQueueLots = -1;
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         cron.schedule("*/1 * * * *", async () => {
             if (!this.isRunning) {
                 this.isRunning = true;
