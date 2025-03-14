@@ -367,7 +367,7 @@ export class AgentBotRedemption {
         if (maxRedemptionFee.eq(BN_ZERO)) {
             const coreVaultSourceAddress = await requireNotNull(this.context.coreVaultManager).coreVaultAddress();
             if (redemption.paymentAddress === coreVaultSourceAddress) {
-                const currentFee = await this.context.wallet.getTransactionFee({source: this.agent.underlyingAddress, destination: redemption.paymentAddress, isPayment: true, amount: redemption.valueUBA};
+                const currentFee = await this.context.wallet.getTransactionFee({source: this.agent.underlyingAddress, destination: redemption.paymentAddress, isPayment: true, amount: redemption.valueUBA});
                 maxRedemptionFee = currentFee.muln(2);
             }
         }
