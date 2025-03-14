@@ -104,6 +104,13 @@ export enum AgentNotificationKey {
     AGENT_EVENT_HANDLING_CAUGHT_UP = "AGENT EVENT HANDLING CAUGHT UP",
     AGENT_FUNDED_SERVICE_ACCOUNT = "AGENT FUNDED SERVICE ACCOUNT",
     AGENT_FAILED_FUNDING_SERVICE_ACCOUNT = "AGENT FAILED FUNDING SERVICE ACCOUNT",
+    // core vault
+    TRANSFER_TO_CV_STARTED = "TRANSFER TO CORE VAULT STARTED",
+    TRANSFER_TO_CV_CANCELLED = "TRANSFER TO CORE VAULT CANCELLED",
+    TRANSFER_TO_CV_PERFORMED = "TRANSFER TO CORE VAULT PERFORMED",
+    RETURN_FROM_CV_STARTED = "RETURN FROM CORE VAULT STARTED",
+    RETURN_FROM_CV_CANCELLED = "RETURN FROM CORE VAULT CANCELLED",
+    RETURN_FROM_CV_PERFORMED = "RETURN FROM CORE VAULT PERFORMED",
 }
 
 export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
@@ -603,5 +610,41 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendUnderlyingWithdrawalCreated(amount: string) {
         await this.info(AgentNotificationKey.UNDERLYING_WITHDRAWAL_CREATED, `Agent ${this.address} added payment for underlying withdrawal of ${amount}.`);
+    }
+
+    async sendTransferToCVStarted(requestId: BNish) {
+        await this.info(AgentNotificationKey.TRANSFER_TO_CV_STARTED, `Transfer to core vault ${requestId} started for ${this.address}.`);
+    }
+
+    async sendTransferToCVCancelled(requestId: BNish) {
+        await this.info(
+            AgentNotificationKey.TRANSFER_TO_CV_CANCELLED,
+            `Transfer to core vault ${requestId} was cancelled for agent ${this.address}.`
+        );
+    }
+
+    async sendTransferToCVPerformed(requestId: BNish) {
+        await this.info(
+            AgentNotificationKey.TRANSFER_TO_CV_PERFORMED,
+            `Transfer to core vault ${requestId} was successful for agent ${this.address}.`
+        );
+    }
+
+    async sendReturnFromCVStarted() {
+        await this.info(AgentNotificationKey.RETURN_FROM_CV_STARTED, `Return from core vault started for ${this.address}.`);
+    }
+
+    async sendReturnFromCVCancelled() {
+        await this.info(
+            AgentNotificationKey.RETURN_FROM_CV_CANCELLED,
+            `Return from core vault was cancelled for agent ${this.address}.`
+        );
+    }
+
+    async sendReturnFromCVPerformed() {
+        await this.info(
+            AgentNotificationKey.RETURN_FROM_CV_PERFORMED,
+            `Return from core vault was successful for agent ${this.address}.`
+        );
     }
 }
