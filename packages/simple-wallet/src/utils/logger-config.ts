@@ -3,6 +3,7 @@ import { createLogger, format, type Logger } from "winston";
 import { Console } from "winston/lib/winston/transports";
 import DailyRotateFile from "winston-daily-rotate-file";
 import * as Transport from "winston-transport";
+import { redact } from "./secret-redact";
 
 
 export const loggerAsyncStorage = new AsyncLocalStorage<string>();
@@ -32,7 +33,8 @@ export function createCustomizedLogger(paths: LoggerPaths): Logger {
             format: format.combine(
                 format.timestamp(),
                 format.errors({ stack: true }),
-                format.json()
+                format.json(),
+                format.printf(redact)
             ),
             filename: paths.json,
             json: true,
@@ -44,7 +46,7 @@ export function createCustomizedLogger(paths: LoggerPaths): Logger {
             format: format.combine(
                 format.timestamp(),
                 format.errors({ stack: true }),
-                format.printf(info => `${info.timestamp}  ${formatThreadId()}${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`)
+                format.printf(info => redact(`${info.timestamp}  ${formatThreadId()}${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`))
             ),
             filename: paths.text,
             ...(commonOptions as any),
