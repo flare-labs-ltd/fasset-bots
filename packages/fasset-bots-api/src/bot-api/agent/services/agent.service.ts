@@ -888,7 +888,18 @@ export class AgentService {
         const settings = await cli.context.assetManager.getSettings();
         const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
         const lotSizeAsset = lotSize.toNumber() / 10 ** Number(settings.assetDecimals);
-        return {requestableLotsCV: 123, requestableLotsVault: Number(info.freeCollateralLots), lotSize: lotSizeAsset};
+        const cvEscrowAmount = await cli.context.coreVaultManager?.escrowAmount() as BN;
+        const cvAvailableFunds = await cli.context.coreVaultManager?.availableFunds() as BN;
+        const allFunds = cvEscrowAmount.add(cvAvailableFunds);
+        const cancelableTransferRequestsAmount = await cli.context.coreVaultManager?.cancelableTransferRequestsAmount() as BN;
+        const nonCancelableTransferRequestsAmount = await cli.context.coreVaultManager?.nonCancelableTransferRequestsAmount() as BN;
+        const requestedAmount = cancelableTransferRequestsAmount.add(nonCancelableTransferRequestsAmount);
+        let totalCoreVaultAmount = toBN(0);
+        if (allFunds.gt(requestedAmount)) {
+            totalCoreVaultAmount = allFunds.sub(requestedAmount);
+        }
+        const requestableLots = totalCoreVaultAmount.div(lotSize);
+        return {requestableLotsCV: requestableLots.toNumber(), requestableLotsVault: Number(info.freeCollateralLots), lotSize: lotSizeAsset};
     }
 
     async getVaultRedeemableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RedeemableVaultCVData> {
@@ -910,17 +921,23 @@ export class AgentService {
         // amount to mint
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const underlyingBalance = formatFixed(toBN(info.underlyingBalanceUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
-        return {underlyingBalance: underlyingBalance, transferableBalance: "12,200"};
+        const depositableUBA = await cli.context.assetManager.maximumTransferToCoreVault(agentVaultAddress);
+        const maxTransfer = formatFixed(toBN(depositableUBA[0]), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        return {underlyingBalance: underlyingBalance, transferableBalance: maxTransfer};
     }
 
     //minimumRemainingAfterTransferForCollateralAMG(minBIPS: BN, )
 
     async requestCVDeposit(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
-        return;
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        const amountUBA = currency.parse(amount);
+        await cli.transferToCoreVault(agentVaultAddress, amountUBA);
     }
 
-    async requestCVWithdrawal(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
-        return;
+    async requestCVWithdrawal(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.returnFromCoreVault(agentVaultAddress, lots);
     }
 
     async transferToCVFee(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<TransferToCVFee> {
