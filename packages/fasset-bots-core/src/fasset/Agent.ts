@@ -78,6 +78,13 @@ export class Agent {
         return getAgentSettings(agentInfo);
     }
 
+
+    async getAgentSetting(settingsName: string): Promise<BN | string> {
+        const settings = await this.assetManager.getAgentSetting(this.vaultAddress, settingsName)
+        return settings;
+    }
+
+
     async getAgentInfo(): Promise<AgentInfo> {
         return await this.assetManager.getAgentInfo(this.agentVault.address);
     }
