@@ -81,3 +81,9 @@ export enum TransferToCoreVaultState {
     DONE = "done",
     STARTED = "started"
 }
+
+export enum ReturnFromCoreVaultState {
+    DONE = "done",
+    STARTED = "started",
+    REQUESTED_PROOF = "requestedProof"
+}

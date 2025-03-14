@@ -111,6 +111,9 @@ export enum AgentNotificationKey {
     RETURN_FROM_CV_STARTED = "RETURN FROM CORE VAULT STARTED",
     RETURN_FROM_CV_CANCELLED = "RETURN FROM CORE VAULT CANCELLED",
     RETURN_FROM_CV_PERFORMED = "RETURN FROM CORE VAULT PERFORMED",
+    RETURN_FROM_CV_PAYMENT_PROOF = "RETURN FROM CORE VAULT PAYMENT PROOF REQUESTED",
+    RETURN_FROM_CVN_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR RETURN FROM CORE VAULT",
+
 }
 
 export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
@@ -645,6 +648,17 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(
             AgentNotificationKey.RETURN_FROM_CV_PERFORMED,
             `Return from core vault was successful for agent ${this.address}.`
+        );
+    }
+
+    async sendReturnFromCVRequestPaymentProof(id: string, reference: string) {
+        await this.info(AgentNotificationKey.RETURN_FROM_CV_PAYMENT_PROOF, `Payment proof for return from core vault ${id} (${reference}) was requested for ${this.address}.`);
+    }
+
+    async sendReturnFromCVNoProofObtained(id: number, roundId: number, requestData: string) {
+        await this.danger(
+            AgentNotificationKey.RETURN_FROM_CVN_NO_PROOF_OBTAINED,
+            `Agent ${this.address} cannot obtain proof for return from core vault ${id} in round ${roundId} with requested data ${requestData}.`
         );
     }
 }
