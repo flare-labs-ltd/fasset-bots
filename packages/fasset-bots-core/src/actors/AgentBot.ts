@@ -359,6 +359,9 @@ export class AgentBot {
             threads.push(this.startThread(rootEm, `underlying-payments-${botId}`, true, async (threadEm) => {
                 await this.underlyingManagement.handleOpenUnderlyingPayments(threadEm);
             }));
+            threads.push(this.startThread(rootEm, `return-from-core-vault-${botId}`, true, async (threadEm) => {
+                await this.returnFromCoreVault.handleOpenReturnsFromCoreVault(threadEm);
+            }));
             threads.push(this.startThread(rootEm, `daily-tasks-${botId}`, true, async (threadEm) => {
                 await this.handleDailyTasks(threadEm);
             }));
@@ -408,6 +411,7 @@ export class AgentBot {
         await this.minting.handleOpenMintings(rootEm);
         await this.handleTimelockedProcesses(rootEm);
         await this.underlyingManagement.handleOpenUnderlyingPayments(rootEm);
+        await this.returnFromCoreVault.handleOpenReturnsFromCoreVault(rootEm);
         await this.handleDailyTasks(rootEm);
     }
 

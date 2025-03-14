@@ -77,7 +77,7 @@ export class AgentBotReturnFromCoreVault {
     /**
      * @param rootEm entity manager
      */
-    async handleOpenFromCoreVault(rootEm: EM): Promise<void> {
+    async handleOpenReturnsFromCoreVault(rootEm: EM): Promise<void> {
         try {
             const openFromCoreVaults = await this.openReturnFromCoreVaultIds(rootEm);
             logger.info(`Agent ${this.agent.vaultAddress} started handling open returns from core vault #${openFromCoreVaults.length}.`);
@@ -112,11 +112,15 @@ export class AgentBotReturnFromCoreVault {
      */
     async checkPaymentProofAvailable(rootEm: EM, returnFromCoreVault: Readonly<ReturnFromCoreVault>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for return from core vault ${returnFromCoreVault.requestId.toString()} is available.`);
+        const coreVaultSourceAddress = await requireNotNull(this.context.coreVaultManager).coreVaultAddress();
         if (!returnFromCoreVault.txHash) { //returnFromCoreVault.txHash will already be defined if proof will be obtained for the second time
             let txFound: ITransaction | null = null;
             const txs = await this.context.blockchainIndexer.getTransactionsByReference(returnFromCoreVault.paymentReference);
             for (const tx of txs) {
-                if (tx.reference?.toLowerCase() === returnFromCoreVault.paymentReference?.toLowerCase()) {
+                const paymentValid = tx.inputs.some(([address, _]) => address === coreVaultSourceAddress)
+                    && tx.outputs.some(([address, _]) => address === this.agent.underlyingAddress)
+                    && tx.reference?.toLowerCase() === returnFromCoreVault.paymentReference?.toLowerCase();
+                if (paymentValid) {
                     txFound = tx;
                     break;
                 }
@@ -172,13 +176,9 @@ export class AgentBotReturnFromCoreVault {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for return from core vault ${returnFromCoreVault.requestId.toString()} in round ${returnFromCoreVault.proofRequestRound} and data ${returnFromCoreVault.proofRequestData}.`);
-            try {
-                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
-                    await this.context.assetManager.confirmReturnFromCoreVault(web3DeepNormalize(proof), this.agent.vaultAddress, { from: this.agent.owner.workAddress });
-                });
-            } catch (error) {
-                throw error;
-            }
+            await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
+                await this.context.assetManager.confirmReturnFromCoreVault(web3DeepNormalize(proof), this.agent.vaultAddress, { from: this.agent.owner.workAddress });
+            });
             returnFromCoreVault = await this.updateReturnFromCoreVault(rootEm, returnFromCoreVault, {
                 state: ReturnFromCoreVaultState.DONE,
             });
