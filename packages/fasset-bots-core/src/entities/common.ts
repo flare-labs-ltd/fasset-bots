@@ -69,7 +69,7 @@ export enum AgentSettingName {
     POOL_TOP_UP_CR = "poolTopupCollateralRatioBIPS",
     POOL_TOP_UP_TOKEN_PRICE_FACTOR = "poolTopupTokenPriceFactorBIPS",
     HAND_SHAKE_TYPE = "handshakeType",
-    REDEMPTION_POLL_FEE_SHARE = "redemptionPoolFeeShareBIPS"
+    REDEMPTION_POOL_FEE_SHARE = "redemptionPoolFeeShareBIPS"
 }
 
 export enum RejectedRedemptionRequestState {

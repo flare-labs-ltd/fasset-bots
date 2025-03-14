@@ -838,8 +838,8 @@ export class AgentBotCommands {
         logger.info(`Agent ${agentVault} is trying to transfer underlying to core vault.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         // check that amount is not too high (we don't want the agent to go to full liquidation)
-        const allowedToSend = this.getMaximumTransferToCoreVault(agentVault);
-        if (toBN(amount).gt((await allowedToSend).maximumTransferUBA)) {
+        const allowedToSend = await this.getMaximumTransferToCoreVault(agentVault);
+        if (toBN(amount).gt(allowedToSend.maximumTransferUBA)) {
             const currency = await Currencies.fassetUnderlyingToken(this.context);
             logger.error(`Agent ${agentVault} cannot transfer funds. Requested amount ${currency.formatValue(amount)} is higher than allowed ${currency.formatValue((await allowedToSend).maximumTransferUBA)}.`);
             throw new CommandLineError(`Cannot transfer funds. Requested amount ${currency.formatValue(amount)} is higher than allowed ${currency.formatValue((await allowedToSend).maximumTransferUBA)}.`);
