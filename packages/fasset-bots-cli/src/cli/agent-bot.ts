@@ -302,8 +302,9 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const destinationAddressTrimmed = destinationAddress.trim();
         const currency = await Currencies.fassetUnderlyingToken(cli.context);
-        await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddress);
+        await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddressTrimmed);
     });
 
 program
@@ -504,6 +505,73 @@ program
             console.log(chalk.yellowBright("MANAGEMENT ACCOUNT:"));
             await bot.infoBot().printBalances(bot.owner.managementAddress);
         }
+    });
+
+program
+    .command("transferToCoreVault")
+    .description("agent requests transfers of its underlying to core vault")
+    .argument("<agentVaultAddress>")
+    .argument("<amount>")
+    .action(async (agentVault: string, amount: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        await cli.transferToCoreVault(agentVault, currency.parse(amount));
+    });
+
+program
+    .command("cancelTransferToCoreVault")
+    .description("cancellation of agent's transfer to core vault")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        await cli.cancelTransferToCoreVault(agentVault);
+    });
+
+program
+    .command("maximumTransferToCoreVault")
+    .description("get maximum amount to transfer to core vault and minimum amount to be left on underlying")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const allowed = await cli.getMaximumTransferToCoreVault(agentVault);
+        const currency = await Currencies.fasset(cli.context);
+        console.log(`Agent's ${agentVault} maximum amount to transfer is ${currency.format(allowed.maximumTransferUBA)}.`);
+        console.log(`Agent's ${agentVault} minimum amount to be left is ${currency.format(allowed.minimumLeftAmountUBA)}.`);
+    });
+
+program
+    .command("returnFromCoreVault")
+    .description("agent requests underlying transfer from core vault")
+    .argument("<agentVaultAddress>")
+    .argument("<lots>")
+    .action(async (agentVault: string, lots: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        validateInteger(lots, "lots", { min: 1 });
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        await cli.transferToCoreVault(agentVault, lots);
+    });
+
+program
+    .command("cancelReturnFromCoreVault")
+    .description("cancellation of agent's return from core vault")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        await cli.cancelReturnFromCoreVault(agentVault);
     });
 
 toplevelRun(async () => {

@@ -37,7 +37,7 @@ let wClient: BTC;
 let testOrm: ORM;
 let monitor: ITransactionMonitor;
 
-describe("Bitcoin mainnet wallet tests", () => {
+describe.skip("Bitcoin mainnet wallet tests", () => {
     let removeConsoleLogging: () => void;
 
     before(async () => {

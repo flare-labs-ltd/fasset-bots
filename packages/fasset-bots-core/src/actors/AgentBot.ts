@@ -38,6 +38,8 @@ import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 import { AgentBotHandshake } from "./AgentBotHandshake";
 import { HandshakeAddressVerifier } from "./plugins/HandshakeAddressVerifier";
+import { AgentBotTransferToCoreVault } from "./AgentBotTransferToCoreVault";
+import { AgentBotReturnFromCoreVault } from "./AgentBotReturnFromCoreVault";
 
 const PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS = 2 * MINUTES * 1000;
 
@@ -117,6 +119,8 @@ export class AgentBot {
     collateralWithdrawal = new AgentBotCollateralWithdrawal(this);
     claims = new AgentBotClaims(this);
     closing = new AgentBotClosing(this);
+    transferToCoreVault = new AgentBotTransferToCoreVault(this, this.agent, this.notifier);
+    returnFromCoreVault = new AgentBotReturnFromCoreVault(this, this.agent, this.notifier);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -355,6 +359,9 @@ export class AgentBot {
             threads.push(this.startThread(rootEm, `underlying-payments-${botId}`, true, async (threadEm) => {
                 await this.underlyingManagement.handleOpenUnderlyingPayments(threadEm);
             }));
+            threads.push(this.startThread(rootEm, `return-from-core-vault-${botId}`, true, async (threadEm) => {
+                await this.returnFromCoreVault.handleOpenReturnsFromCoreVault(threadEm);
+            }));
             threads.push(this.startThread(rootEm, `daily-tasks-${botId}`, true, async (threadEm) => {
                 await this.handleDailyTasks(threadEm);
             }));
@@ -404,6 +411,7 @@ export class AgentBot {
         await this.minting.handleOpenMintings(rootEm);
         await this.handleTimelockedProcesses(rootEm);
         await this.underlyingManagement.handleOpenUnderlyingPayments(rootEm);
+        await this.returnFromCoreVault.handleOpenReturnsFromCoreVault(rootEm);
         await this.handleDailyTasks(rootEm);
     }
 
@@ -490,6 +498,19 @@ export class AgentBot {
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash);
         } else if (eventIs(event, this.context.assetManager, "AgentPing")) {
             await this.handleAgentPing(event.args);
+        } // core vault events
+            else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultStarted")) {
+            await this.transferToCoreVault.transferToCoreVaultStarted(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultCancelled")) {
+            await this.transferToCoreVault.transferToCoreVaultCancelled(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultSuccessful")) {
+            await this.transferToCoreVault.transferToCoreVaultPerformed(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultRequested")) {
+            await this.returnFromCoreVault.returnFromCoreVaultStarted(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultCancelled")) {
+            await this.returnFromCoreVault.returnFromCoreVaultCancelled(em);
+        } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultConfirmed")) {
+            await this.returnFromCoreVault.returnFromCoreVaultConfirmed(em);
         }
     }
 

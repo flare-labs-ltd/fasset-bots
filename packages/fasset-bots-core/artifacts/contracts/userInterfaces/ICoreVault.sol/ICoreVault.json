@@ -1,0 +1,455 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ICoreVault",
+  "sourceName": "contracts/userInterfaces/ICoreVault.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "paymentAddress",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "CoreVaultRedemptionRequested",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "ReturnFromCoreVaultCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "receivedUnderlyingUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "remintedUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "ReturnFromCoreVaultConfirmed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "ReturnFromCoreVaultRequested",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "transferRedemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferToCoreVaultCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "transferRedemptionRequestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferToCoreVaultStarted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "transferRedemptionRequestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferToCoreVaultSuccessful",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "cancelReturnFromCoreVault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "cancelTransferToCoreVault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionId",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "inUtxo",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "utxo",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IPayment.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "receivingAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "intendedReceivingAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "spentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "intendedSpentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "receivedAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "intendedReceivedAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "oneToOne",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint8",
+                      "name": "status",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct IPayment.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct IPayment.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IPayment.Proof",
+          "name": "_payment",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "confirmReturnFromCoreVault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "maximumTransferToCoreVault",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_maximumTransferUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_minimumLeftAmountUBA",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "_lots",
+          "type": "uint64"
+        },
+        {
+          "internalType": "string",
+          "name": "_redeemerUnderlyingAddress",
+          "type": "string"
+        }
+      ],
+      "name": "redeemFromCoreVault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "_lots",
+          "type": "uint64"
+        }
+      ],
+      "name": "requestReturnFromCoreVault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferToCoreVault",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_amountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferToCoreVaultFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_transferFeeNatWei",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

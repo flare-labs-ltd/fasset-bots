@@ -39,8 +39,7 @@ describe("System keeper tests", () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(context, lastBlock);
+        state = new TrackedState(context);
         await state.initialize();
         return { orm, context, trackedStateContext, chain, state };
     }
@@ -245,8 +244,7 @@ describe("System keeper tests", () => {
     });
 
     it("Should not check collateral ratio after minting execution - faulty function", async () => {
-        const lastBlock = await web3.eth.getBlockNumber();
-        const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
+        const mockState = new MockTrackedState(trackedStateContext, state);
         await mockState.initialize();
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, mockState);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -260,8 +258,7 @@ describe("System keeper tests", () => {
     });
 
     it("Should not check collateral ratio after price changes - faulty function", async () => {
-        const lastBlock = await web3.eth.getBlockNumber();
-        const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
+        const mockState = new MockTrackedState(trackedStateContext, state);
         await mockState.initialize();
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, mockState);
         const spyLiquidation = spy.on(systemKeeper, "checkAllAgentsForLiquidation");

@@ -13,6 +13,10 @@ import { TrackedState } from "./TrackedState";
 
 export type InitialAgentData = EventArgs<AgentVaultCreated>;
 
+export interface ExtendedAgentInfo extends AgentInfo {
+    redemptionPoolFeeShareBIPS: BN;
+}
+
 export class TrackedAgentState {
     static deepCopyWithObjectCreate = true;
 
@@ -59,6 +63,7 @@ export class TrackedAgentState {
         vaultCollateralToken: "",
         feeBIPS: BN_ZERO,
         poolFeeShareBIPS: BN_ZERO,
+        redemptionPoolFeeShareBIPS: BN_ZERO,
         mintingVaultCollateralRatioBIPS: BN_ZERO,
         mintingPoolCollateralRatioBIPS: BN_ZERO,
         poolExitCollateralRatioBIPS: BN_ZERO,
@@ -76,6 +81,9 @@ export class TrackedAgentState {
     dustUBA: BN = BN_ZERO;
     underlyingBalanceUBA: BN = BN_ZERO;
 
+    // safeguard metadata
+    initBlock: number | null = null; // block at which the initial agent info was fetch at
+
     // calculated getters
     get requiredUnderlyingBalanceUBA(): BN {
         const backedUBA = this.mintedUBA.add(this.redeemingUBA);
@@ -86,7 +94,8 @@ export class TrackedAgentState {
         return this.underlyingBalanceUBA.sub(this.requiredUnderlyingBalanceUBA);
     }
 
-    initialize(agentInfo: AgentInfo): void {
+    initialize(agentInfo: ExtendedAgentInfo, initBlock: number | null = null): void {
+        this.initBlock = initBlock;
         this.status = Number(agentInfo.status);
         this.publiclyAvailable = agentInfo.publiclyAvailable;
         this.totalPoolCollateralNATWei = toBN(agentInfo.totalPoolCollateralNATWei);
@@ -398,6 +407,7 @@ export class TrackedAgentState {
             vaultCollateralToken: this.agentSettings.vaultCollateralToken,
             feeBIPS: this.agentSettings.feeBIPS,
             poolFeeShareBIPS: this.agentSettings.poolFeeShareBIPS,
+            redemptionPoolFeeShareBIPS: this.agentSettings.redemptionPoolFeeShareBIPS,
             mintingVaultCollateralRatioBIPS: this.agentSettings.mintingVaultCollateralRatioBIPS,
             mintingPoolCollateralRatioBIPS: this.agentSettings.mintingPoolCollateralRatioBIPS,
             poolExitCollateralRatioBIPS: this.agentSettings.poolExitCollateralRatioBIPS,

@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
-import { ADDRESS_LENGTH, AgentHandshakeState, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH, RejectedRedemptionRequestState } from "./common";
+import { ADDRESS_LENGTH, AgentHandshakeState, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH, RejectedRedemptionRequestState, ReturnFromCoreVaultState, TransferToCoreVaultState } from "./common";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -438,6 +438,71 @@ export class RejectedRedemptionRequest {
 
     @Property({ type: BNType, default: '0' })
     valueTakenOverUBA!: BN;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
+}
+
+@Entity()
+@Unique({ properties: ["agentAddress", "requestId"] })
+export class TransferToCoreVault {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property()
+    state!: TransferToCoreVaultState;
+
+    @Property({ length: ADDRESS_LENGTH })
+    agentAddress!: string;
+
+    @Property({ type: BNType })
+    requestId!: BN;
+
+    @Property({ type: BNType })
+    valueUBA!: BN;
+
+    @Property({ nullable: true })
+    cancelled?: boolean;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
+}
+
+
+@Entity()
+export class ReturnFromCoreVault {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property()
+    state!: ReturnFromCoreVaultState;
+
+    @Property({ length: ADDRESS_LENGTH })
+    agentAddress!: string;
+
+    @Property({ type: BNType })
+    valueUBA!: BN;
+
+    @Property({ length: BYTES32_LENGTH })
+    paymentReference!: string;
+
+    @Property({ nullable: true })
+    cancelled?: boolean;
+
+    @Property({ nullable: true })
+    txHash?: string;
+
+    @Property({ nullable: true })
+    proofRequestRound?: number;
+
+    @Property({ nullable: true, type: "text" })
+    proofRequestData?: string;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();

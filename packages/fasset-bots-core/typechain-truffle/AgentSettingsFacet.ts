@@ -91,6 +91,12 @@ export interface AgentSettingsFacetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  getAgentSetting(
+    _agentVault: string,
+    _name: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   methods: {
     announceAgentSettingUpdate: {
       (
@@ -141,6 +147,12 @@ export interface AgentSettingsFacetInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    getAgentSetting(
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

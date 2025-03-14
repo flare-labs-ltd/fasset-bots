@@ -1,5 +1,6 @@
 import { IAssetAgentContext, IAssetNativeChainContext, IChallengerContext, ILiquidatorContext, ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
+import { ZERO_ADDRESS } from "../utils";
 import { artifacts } from "../utils/web3";
 import { AgentBotConfig, BotConfig, BotFAssetConfig, BotFAssetConfigWithIndexer, BotFAssetConfigWithWallet, KeeperBotConfig, UserBotConfig } from "./BotConfig";
 
@@ -7,6 +8,7 @@ const WNat = artifacts.require("WNat");
 const IPriceChangeEmitter = artifacts.require("IPriceChangeEmitter");
 const FAsset = artifacts.require("FAsset");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
+const CoreVaultManager = artifacts.require("CoreVaultManager");
 
 /**
  * Creates asset context needed for AgentBot.
@@ -67,6 +69,7 @@ export async function createNativeContext(config: BotConfig, chainConfig: BotFAs
     const retriever = config.contractRetriever;
     const assetManager = chainConfig.assetManager;
     const settings = await assetManager.getSettings();
+    const coreVaultManagerAddress = await assetManager.getCoreVaultManager();
     return {
         fAssetSymbol: chainConfig.fAssetSymbol,
         nativeChainInfo: config.nativeChainInfo,
@@ -77,6 +80,7 @@ export async function createNativeContext(config: BotConfig, chainConfig: BotFAs
         fAsset: await FAsset.at(settings.fAsset),
         priceChangeEmitter: await retriever.getContract(IPriceChangeEmitter, chainConfig.priceChangeEmitter),
         wNat: await WNat.at(await assetManager.getWNat()),
+        coreVaultManager: coreVaultManagerAddress !== ZERO_ADDRESS ? await CoreVaultManager.at(coreVaultManagerAddress) : undefined,
     }
 }
 

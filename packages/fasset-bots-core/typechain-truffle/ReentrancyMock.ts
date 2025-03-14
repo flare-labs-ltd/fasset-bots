@@ -96,6 +96,15 @@ export interface ReentrancyMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<void>;
 
+  unguardedMethodThatShouldFail: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   methods: {
     callback: {
       (txDetails?: Truffle.TransactionDetails): Promise<
@@ -176,6 +185,15 @@ export interface ReentrancyMockInstance extends Truffle.ContractInstance {
     unguardedCheckNotEntered(
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
+
+    unguardedMethodThatShouldFail: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

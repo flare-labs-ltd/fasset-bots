@@ -78,8 +78,7 @@ describe("Fuzzing tests", () => {
         eventFormatter = new EventFormatter();
         notifiers = [new FuzzingNotifierTransport(eventFormatter)];
         // state checker
-        const lastBlock = await web3.eth.getBlockNumber();
-        commonTrackedState = new FuzzingState(context, lastBlock, new MockChainWallet(chain));
+        commonTrackedState = new FuzzingState(context, new MockChainWallet(chain));
         await commonTrackedState.initialize();
         // runner
         runner = new FuzzingRunner(context, AVOID_ERRORS, commonTrackedState, eventFormatter);

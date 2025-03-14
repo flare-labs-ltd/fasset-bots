@@ -14,6 +14,16 @@ export interface RedemptionConfirmationsFacetContract
   ): Promise<RedemptionConfirmationsFacetInstance>;
 }
 
+export interface DustChanged {
+  name: "DustChanged";
+  args: {
+    agentVault: string;
+    dustUBA: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface FullLiquidationStarted {
   name: "FullLiquidationStarted";
   args: {
@@ -104,6 +114,42 @@ export interface RedemptionPerformed {
   };
 }
 
+export interface RedemptionTicketCreated {
+  name: "RedemptionTicketCreated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface RedemptionTicketUpdated {
+  name: "RedemptionTicketUpdated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface TransferToCoreVaultSuccessful {
+  name: "TransferToCoreVaultSuccessful";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface UnderlyingBalanceChanged {
   name: "UnderlyingBalanceChanged";
   args: {
@@ -127,12 +173,16 @@ export interface UnderlyingBalanceTooLow {
 }
 
 export type AllEvents =
+  | DustChanged
   | FullLiquidationStarted
   | LiquidationEnded
   | RedemptionDefault
   | RedemptionPaymentBlocked
   | RedemptionPaymentFailed
   | RedemptionPerformed
+  | RedemptionTicketCreated
+  | RedemptionTicketUpdated
+  | TransferToCoreVaultSuccessful
   | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow;
 

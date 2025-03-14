@@ -19,7 +19,7 @@ import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, requireNotNull, toBIPS, 
 import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { testChainInfo, TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { AssetManagerControllerInstance, FakeERC20Instance, FtsoV2PriceStoreMockInstance } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AssetManagerControllerInstance, FakeERC20Instance, FtsoV2PriceStoreMockInstance, IIAssetManagerInstance } from "../../typechain-truffle";
 import { FaultyWallet } from "./FaultyWallet";
 import { AssetManagerInitSettings, newAssetManager, newAssetManagerController, waitForTimelock } from "./new-asset-manager";
 
@@ -41,6 +41,8 @@ const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 const FtsoV2PriceStoreMock = artifacts.require("FtsoV2PriceStoreMock");
 const IPriceChangeEmitter = artifacts.require("IPriceChangeEmitter");
+const CoreVaultManager = artifacts.require('CoreVaultManager');
+const CoreVaultManagerProxy = artifacts.require('CoreVaultManagerProxy');
 
 export type AssetManagerControllerEvents = import("../../typechain-truffle/AssetManagerController").AllEvents;
 export type FtsoV2PriceStoreMockEvents = import("../../typechain-truffle/FtsoV2PriceStoreMock").AllEvents;
@@ -119,8 +121,8 @@ export async function createTestChainContracts(governance: string, updateExecuto
     await agentOwnerRegistry.setAllowAll(true, { from: governance });
     // add some contracts to address updater
     await addressUpdater.addOrUpdateContractNamesAndAddresses(
-        ["GovernanceSettings", "AddressUpdater", "FdcHub", "Relay", "WNat"],
-        [governanceSettings.address, addressUpdater.address, fdcHub.address, relay.address, wNat.address],
+        ["GovernanceSettings", "AddressUpdater", "FdcHub", "Relay", "FdcVerification", "WNat"],
+        [governanceSettings.address, addressUpdater.address, fdcHub.address, relay.address, fdcVerification.address, wNat.address],
         { from: governance });
     // set contracts
     const contracts: ChainContracts = {
@@ -197,6 +199,7 @@ type CreateTestAssetContextOptions = {
     chain?: MockChain;
     flareDataConnectorClient?: MockFlareDataConnectorClient;
     flareDataConnectorSubmitterAccount?: string;
+    coreVaultUnderlyingAddress?: string;    // set address to enable core vault functionality
 };
 
 export async function createTestAssetContext(
@@ -239,7 +242,10 @@ export async function createTestAssetContext(
     const fAssetSymbol = parameters.fAssetSymbol ?? `F${chainInfo.symbol}`;
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, options.assetManagerControllerAddress ?? assetManagerController,
-        fAssetName, fAssetSymbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
+        fAssetName, fAssetSymbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals,
+        { governanceSettings: contracts.GovernanceSettings.address });
+    // create and assign core vault
+    const coreVaultManager = options.coreVaultUnderlyingAddress ? await assignCoreVaultManager(assetManager, addressUpdater, options.coreVaultUnderlyingAddress) : undefined;
     // indexer
     const blockchainIndexer = new MockIndexer([""], chainInfo.chainId, chain);
     // return context
@@ -261,6 +267,7 @@ export async function createTestAssetContext(
         verificationClient,
         agentOwnerRegistry,
         priceStore,
+        coreVaultManager,
     };
 }
 
@@ -302,6 +309,7 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext, us
         stablecoins: context.stablecoins,
         agentOwnerRegistry: context.agentOwnerRegistry,
         priceStore: context.priceStore,
+        coreVaultManager: context.coreVaultManager,
         liquidationStrategy: useCustomStrategy ? { className: "DefaultLiquidationStrategy" } : undefined,
         challengeStrategy: useCustomStrategy ? { className: "DefaultChallengeStrategy" } : undefined,
     };
@@ -389,6 +397,11 @@ function createTestAssetManagerSettings(
         transferFeeClaimFirstEpochStartTs: Math.floor(new Date("2024-09-01").getTime() / 1000),
         transferFeeClaimEpochDurationSeconds: 1 * WEEKS,
         transferFeeClaimMaxUnexpiredEpochs: 12,
+        coreVaultNativeAddress: "0xfa3BdC8709226Da0dA13A4d904c8b66f16c3c8BA",     // one of test accounts [9]
+        coreVaultTransferFeeBIPS: toBIPS("0.5%"),
+        coreVaultRedemptionFeeBIPS: toBIPS("1%"),
+        coreVaultMinimumAmountLeftBIPS: 0,
+        coreVaultMinimumRedeemLots: 10,
     };
 }
 
@@ -449,4 +462,18 @@ export function testTimekeeperTimingConfig(overrides?: Partial<TimekeeperTimingC
         maxUpdateTimeDelayMs: 0,
         ...overrides
     };
+}
+
+export async function assignCoreVaultManager(assetManager: IIAssetManagerInstance, addressUpdater: AddressUpdaterInstance, coreVaultUnderlyingAddress: string, coreVaultCustodian?: string, initialNonce: BNish = 1) {
+    const coreVaultManagerImpl = await CoreVaultManager.new();
+    const settings = await assetManager.getSettings();
+    const governanceSettings = await assetManager.governanceSettings();
+    const governance = await assetManager.governance();
+    const coreVaultCustodianAddress = coreVaultCustodian ?? "TEST_CORE_VAULT_CUSTODIAN";
+    const coreVaultManagerProxy = await CoreVaultManagerProxy.new(coreVaultManagerImpl.address, governanceSettings, governance, addressUpdater.address,
+        assetManager.address, settings.chainId, coreVaultCustodianAddress, coreVaultUnderlyingAddress, initialNonce);
+    const coreVaultManager = await CoreVaultManager.at(coreVaultManagerProxy.address);
+    await addressUpdater.updateContractAddresses([coreVaultManager.address], { from: governance });
+    await waitForTimelock(assetManager.setCoreVaultManager(coreVaultManager.address, { from: governance }), assetManager, governance);
+    return coreVaultManager;
 }

@@ -8,10 +8,9 @@ import { MockTrackedAgentState } from "./MockTrackedAgentState";
 export class MockTrackedState extends TrackedState {
     constructor(
         context: IAssetNativeChainContext,
-        currentEventBlock: number,
         public trackedState: TrackedState | null
     ) {
-        super(context, currentEventBlock);
+        super(context);
     }
 
     // tracked agents
@@ -25,7 +24,7 @@ export class MockTrackedState extends TrackedState {
     }
 
     override async createAgentWithCurrentState(vaultAddress: string): Promise<MockTrackedAgentState> {
-        const agentInfo = await this.context.assetManager.getAgentInfo(vaultAddress);
+        const { info: agentInfo } = await this.getAgentInfo(vaultAddress);
         const agent = this.createAgent({
             agentVault: vaultAddress,
             owner: agentInfo.ownerManagementAddress,

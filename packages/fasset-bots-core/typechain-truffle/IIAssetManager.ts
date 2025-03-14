@@ -310,6 +310,18 @@ export interface ContractChanged {
   };
 }
 
+export interface CoreVaultRedemptionRequested {
+  name: "CoreVaultRedemptionRequested";
+  args: {
+    redeemer: string;
+    paymentAddress: string;
+    valueUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
 export interface CurrentUnderlyingBlockUpdated {
   name: "CurrentUnderlyingBlockUpdated";
   args: {
@@ -736,6 +748,44 @@ export interface RedemptionTicketUpdated {
   };
 }
 
+export interface ReturnFromCoreVaultCancelled {
+  name: "ReturnFromCoreVaultCancelled";
+  args: {
+    agentVault: string;
+    requestId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface ReturnFromCoreVaultConfirmed {
+  name: "ReturnFromCoreVaultConfirmed";
+  args: {
+    agentVault: string;
+    requestId: BN;
+    receivedUnderlyingUBA: BN;
+    remintedUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+  };
+}
+
+export interface ReturnFromCoreVaultRequested {
+  name: "ReturnFromCoreVaultRequested";
+  args: {
+    agentVault: string;
+    requestId: BN;
+    paymentReference: string;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: string;
+    3: BN;
+  };
+}
+
 export interface SelfClose {
   name: "SelfClose";
   args: {
@@ -821,6 +871,40 @@ export interface TransferFeesClaimed {
     2: BN;
     3: BN;
     4: BN;
+  };
+}
+
+export interface TransferToCoreVaultCancelled {
+  name: "TransferToCoreVaultCancelled";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface TransferToCoreVaultStarted {
+  name: "TransferToCoreVaultStarted";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface TransferToCoreVaultSuccessful {
+  name: "TransferToCoreVaultSuccessful";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
   };
 }
 
@@ -927,6 +1011,7 @@ export type AllEvents =
   | CollateralTypeAdded
   | CollateralTypeDeprecated
   | ContractChanged
+  | CoreVaultRedemptionRequested
   | CurrentUnderlyingBlockUpdated
   | DiamondCut
   | DuplicatePaymentConfirmed
@@ -960,6 +1045,9 @@ export type AllEvents =
   | RedemptionTicketCreated
   | RedemptionTicketDeleted
   | RedemptionTicketUpdated
+  | ReturnFromCoreVaultCancelled
+  | ReturnFromCoreVaultConfirmed
+  | ReturnFromCoreVaultRequested
   | SelfClose
   | SelfMint
   | SettingArrayChanged
@@ -968,6 +1056,9 @@ export type AllEvents =
   | TimelockedGovernanceCallExecuted
   | TransferFeeChangeScheduled
   | TransferFeesClaimed
+  | TransferToCoreVaultCancelled
+  | TransferToCoreVaultStarted
+  | TransferToCoreVaultSuccessful
   | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow
   | UnderlyingBalanceToppedUp
@@ -1373,6 +1464,42 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  cancelReturnFromCoreVault: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  cancelTransferToCoreVault: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   cancelUnderlyingWithdrawal: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -1554,6 +1681,141 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         };
       },
       _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  confirmReturnFromCoreVault: {
+    (
+      _payment: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            sourceAddressesRoot: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payment: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            sourceAddressesRoot: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payment: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            sourceAddressesRoot: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payment: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            sourceAddressesRoot: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
+      },
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2832,6 +3094,12 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  getAgentSetting(
+    _agentVault: string,
+    _name: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   getAgentVaultCollateralToken(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -2913,6 +3181,28 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       safetyMinCollateralRatioBIPS: BN;
     }[]
   >;
+
+  getCoreVaultManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  getCoreVaultMinimumAmountLeftBIPS(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  getCoreVaultMinimumRedeemLots(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  getCoreVaultNativeAddress(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getCoreVaultRedemptionFeeBIPS(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  getCoreVaultTransferFeeBIPS(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   getFAssetsBackedByPool(
     _agentVault: string,
@@ -3176,6 +3466,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
+
+  maximumTransferToCoreVault(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
 
   mintFromFreeUnderlying: {
     (
@@ -3550,6 +3845,29 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  redeemFromCoreVault: {
+    (
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   redemptionPaymentDefault: {
     (
       _proof: {
@@ -3810,6 +4128,29 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  requestReturnFromCoreVault: {
+    (
+      _agentVault: string,
+      _lots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _lots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _lots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _lots: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -4397,6 +4738,119 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCoreVaultManager: {
+    (
+      _coreVaultManager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _coreVaultManager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _coreVaultManager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _coreVaultManager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCoreVaultMinimumAmountLeftBIPS: {
+    (
+      _minimumAmountLeftBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _minimumAmountLeftBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _minimumAmountLeftBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _minimumAmountLeftBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCoreVaultMinimumRedeemLots: {
+    (
+      _minimumRedeemLots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _minimumRedeemLots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _minimumRedeemLots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _minimumRedeemLots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCoreVaultNativeAddress: {
+    (_nativeAddress: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _nativeAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _nativeAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _nativeAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCoreVaultRedemptionFeeBIPS: {
+    (
+      _redemptionFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _redemptionFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _redemptionFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _redemptionFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCoreVaultTransferFeeBIPS: {
+    (
+      _transferFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _transferFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _transferFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _transferFeeBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -5069,6 +5523,34 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     maxUnexpiredEpochs: BN;
     firstClaimableEpoch: BN;
   }>;
+
+  transferToCoreVault: {
+    (
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  transferToCoreVaultFee(
+    _amountUBA: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   transfersEmergencyPaused(
     txDetails?: Truffle.TransactionDetails
@@ -5775,6 +6257,42 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    cancelReturnFromCoreVault: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    cancelTransferToCoreVault: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     cancelUnderlyingWithdrawal: {
       (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -5956,6 +6474,141 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
           };
         },
         _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    confirmReturnFromCoreVault: {
+      (
+        _payment: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              sourceAddressesRoot: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payment: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              sourceAddressesRoot: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payment: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              sourceAddressesRoot: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payment: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              sourceAddressesRoot: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
+        },
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -7238,6 +7891,12 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    getAgentSetting(
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     getAgentVaultCollateralToken(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -7319,6 +7978,30 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         safetyMinCollateralRatioBIPS: BN;
       }[]
     >;
+
+    getCoreVaultManager(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getCoreVaultMinimumAmountLeftBIPS(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getCoreVaultMinimumRedeemLots(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getCoreVaultNativeAddress(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getCoreVaultRedemptionFeeBIPS(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getCoreVaultTransferFeeBIPS(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     getFAssetsBackedByPool(
       _agentVault: string,
@@ -7582,6 +8265,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    maximumTransferToCoreVault(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
 
     mintFromFreeUnderlying: {
       (
@@ -7956,6 +8644,29 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    redeemFromCoreVault: {
+      (
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     redemptionPaymentDefault: {
       (
         _proof: {
@@ -8216,6 +8927,29 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    requestReturnFromCoreVault: {
+      (
+        _agentVault: string,
+        _lots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _lots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _lots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _lots: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -8821,6 +9555,119 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultManager: {
+      (
+        _coreVaultManager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _coreVaultManager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _coreVaultManager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _coreVaultManager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultMinimumAmountLeftBIPS: {
+      (
+        _minimumAmountLeftBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _minimumAmountLeftBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _minimumAmountLeftBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _minimumAmountLeftBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultMinimumRedeemLots: {
+      (
+        _minimumRedeemLots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _minimumRedeemLots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _minimumRedeemLots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _minimumRedeemLots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultNativeAddress: {
+      (_nativeAddress: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _nativeAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _nativeAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _nativeAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultRedemptionFeeBIPS: {
+      (
+        _redemptionFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _redemptionFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _redemptionFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _redemptionFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultTransferFeeBIPS: {
+      (
+        _transferFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _transferFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _transferFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _transferFeeBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -9502,6 +10349,34 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       maxUnexpiredEpochs: BN;
       firstClaimableEpoch: BN;
     }>;
+
+    transferToCoreVault: {
+      (
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    transferToCoreVaultFee(
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     transfersEmergencyPaused(
       txDetails?: Truffle.TransactionDetails

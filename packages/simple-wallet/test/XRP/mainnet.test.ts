@@ -46,7 +46,7 @@ let testOrm: ORM;
 let monitor: ITransactionMonitor;
 let stressTestSecrets: AccountSecretsForStressTest;
 
-describe("XRP mainnet wallet tests", () => {
+describe.skip("XRP mainnet wallet tests", () => {
     let removeConsoleLogging: () => void;
 
     before(async () => {
