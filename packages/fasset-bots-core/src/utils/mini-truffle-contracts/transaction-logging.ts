@@ -1,7 +1,12 @@
 import "dotenv/config";
-import { createCustomizedLogger } from "../logger";
+import { Logger } from "winston";
+import { createCustomizedLogger } from "@flarelabs/simple-wallet";
 
-export const transactionLogger = createCustomizedLogger({ json: "log/transactions/transactions-%DATE%.log.json", logTarget: process.env.LOG_TARGET });
+
+export const transactionLogger: Logger = createCustomizedLogger({
+    json: "log/transactions/transactions-%DATE%.log.json",
+    logTarget: process.env.LOG_TARGET
+});
 
 export class ErrorWithCause extends Error {
     #errorCause: any;
