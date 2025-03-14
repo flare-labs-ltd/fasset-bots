@@ -363,7 +363,14 @@ export class AgentBotRedemption {
         const minFeePerKB = paymentAmount.muln(this.bot.agentBotSettings.feeSafetyFactorPerKB).divn(UTXO_BLOCK_SIZE_IN_KB * blocksToFill);
         const redemptionPoolFeeShareBIPS = toBN(await this.agent.getAgentSetting("redemptionPoolFeeShareBIPS"));
         const poolFeeUBA = redemptionFee.mul(redemptionPoolFeeShareBIPS).divn(MAX_BIPS);
-        const maxRedemptionFee = redemptionFee.sub(poolFeeUBA);
+        let maxRedemptionFee = redemptionFee.sub(poolFeeUBA);
+        if (maxRedemptionFee.eq(BN_ZERO)) {
+            const coreVaultSourceAddress = await requireNotNull(this.context.coreVaultManager).coreVaultAddress();
+            if (redemption.paymentAddress === coreVaultSourceAddress) {
+                const currentFee = await this.context.wallet.getTransactionFee({source: this.agent.underlyingAddress, destination: redemption.paymentAddress, isPayment: true, amount: redemption.valueUBA};
+                maxRedemptionFee = currentFee.muln(2);
+            }
+        }
 
         redemption = await this.updateRedemption(rootEm, redemption, {
             state: AgentRedemptionState.PAYING,
