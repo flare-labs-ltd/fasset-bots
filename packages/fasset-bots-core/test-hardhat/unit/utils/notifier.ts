@@ -421,6 +421,60 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
+    it("Should send agent transfer to cv started", async () => {
+        const spySend = spy.on(notifier, "sendTransferToCVStarted");
+        await notifier.sendTransferToCVStarted("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent transfer to cv cancelled", async () => {
+        const spySend = spy.on(notifier, "sendTransferToCVCancelled");
+        await notifier.sendTransferToCVCancelled("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent transfer to cv performed", async () => {
+        const spySend = spy.on(notifier, "sendTransferToCVPerformed");
+        await notifier.sendTransferToCVPerformed("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent return from cv started", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVStarted");
+        await notifier.sendReturnFromCVStarted("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent return from cv cancelled", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVCancelled");
+        await notifier.sendReturnFromCVCancelled("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent return from cv performed", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVPerformed");
+        await notifier.sendReturnFromCVPerformed("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent return from cv payment proof requested", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVRequestPaymentProof");
+        await notifier.sendReturnFromCVRequestPaymentProof("requestId", "reference");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent return from cv payment no proof obtained", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVNoProofObtained");
+        await notifier.sendReturnFromCVNoProofObtained("requestId", 1, "requestData");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent return from cv performed", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVPerformed");
+        await notifier.sendReturnFromCVPerformed("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
     const testNotifierThrottlingTimes: NotifierThrottlingConfigs = {
         [AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE]: { duration: 6 * HOURS, addressInKey: false },
         [AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE]: { duration: 6 * HOURS, addressInKey: true },

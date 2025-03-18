@@ -7,7 +7,7 @@ import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, ReturnFromCoreVault } from "../../../src/entities/agent";
+import { AgentEntity, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, ReturnFromCoreVault, TransferToCoreVault } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { CommandLineError, Currencies } from "../../../src/utils";
@@ -20,11 +20,11 @@ import { TestAssetBotContext, createTestAssetContext, ftsoUsdcInitialPrice, ftso
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
-import { AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, ReturnFromCoreVaultState } from "../../../src/entities/common";
+import { AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, ReturnFromCoreVaultState, TransferToCoreVaultState } from "../../../src/entities/common";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { Secrets } from "../../../src/config/secrets";
 import { TEST_SECRETS } from "../../../test/test-utils/test-bot-config";
-import { requiredEventArgs } from "../../../src/utils/events/truffle";
+import { eventArgs } from "../../../src/utils/events/truffle";
 use(chaiAsPromised);
 use(spies);
 
@@ -41,6 +41,7 @@ describe("AgentBot cli commands unit tests", () => {
     let orm: ORM;
     let ownerAddress: string;
     const ownerUnderlyingAddress = "owner_underlying_1";
+    const coreVaultUnderlyingAddress = "CORE_VAULT_UNDERLYING"
     let minterAddress: string;
     let botCliCommands: AgentBotCommands;
     let chain: MockChain;
@@ -57,6 +58,14 @@ describe("AgentBot cli commands unit tests", () => {
         return agentBot;
     }
 
+    async function triggerInstructionsAndPayFromCV(bot: AgentBot) {
+        const triggerAccount = accounts[201];
+        await bot.context.coreVaultManager!.addTriggeringAccounts([triggerAccount], { from: governance});
+        const instruction = await bot.context.coreVaultManager!.triggerInstructions({ from: triggerAccount});
+        const paymentReqs = eventArgs(instruction, "PaymentInstructions");
+        const txHash = await context.wallet.addTransaction(coreVaultUnderlyingAddress, paymentReqs!.destination, paymentReqs!.amount, paymentReqs!.paymentReference)
+    }
+
     before(async () => {
         accounts = await web3.eth.getAccounts();
         secrets = await new Secrets(TEST_SECRETS, { apiKey: {} });
@@ -68,7 +77,7 @@ describe("AgentBot cli commands unit tests", () => {
 
     async function initialize() {
         orm = await createTestOrm();
-        context = await createTestAssetContext(governance, { ...testChainInfo.xrp, finalizationBlocks: 0 }, { coreVaultUnderlyingAddress: "CORE_VAULT_UNDERLYING" });
+        context = await createTestAssetContext(governance, { ...testChainInfo.xrp, finalizationBlocks: 0 }, { coreVaultUnderlyingAddress });
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         chain.mint(ownerUnderlyingAddress, toBNExp(50, 6));
         // bot cli commands
@@ -723,7 +732,52 @@ describe("AgentBot cli commands unit tests", () => {
         }
     });
 
-    it("Should create 'returnFromCV' redemption request", async () => {
+    it("Should cancel 'transferToCV' redemption request", async () => {
+        const bot = await createAgentBot();
+        const vaultAddress = bot.agent.vaultAddress;
+        await mintAndDepositVaultCollateralToOwner(context, bot.agent, toBN(depositAmountUSDC), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
+        await botCliCommands.enterAvailableList(vaultAddress);
+        const amountToWithdraw = toBN(10e6);
+        // topup
+        await fundUnderlying(context, bot.owner.workAddress, amountToWithdraw.muln(2));
+        await botCliCommands.underlyingTopUp(bot.agent.vaultAddress, amountToWithdraw.muln(2));
+        for (let i = 0; i < 5; i++) {
+            await bot.runStep(orm.em);
+            await time.increase(100);
+            chain.mine(10);
+        }
+        // execute minting
+        const minter = await createTestMinter(context, minterAddress, chain);
+        const crt = await minter.reserveCollateral(vaultAddress, 2);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        // transfer to core vault
+        const result = await botCliCommands.getMaximumTransferToCoreVault(vaultAddress);
+        const res = await botCliCommands.transferToCoreVault(vaultAddress, result.maximumTransferUBA);
+        // cancel transfer to core vault
+        await botCliCommands.cancelTransferToCoreVault(vaultAddress);
+        // run agent's steps and wait for redemption with request id = transferRedemptionId
+        const transferRedemptionId = toBN(res.transferRedemptionRequestId);
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, bot);
+            await time.advanceBlock();
+            chain.mine();
+            await bot.runStep(orm.em);
+            // check if redemption exist
+            orm.em.clear();
+            const transferToCoreVault = await orm.em.findOne(TransferToCoreVault, { requestId: transferRedemptionId }  as FilterQuery<TransferToCoreVault> );
+            if (transferToCoreVault) {
+                console.log(`Agent step ${i}, state = ${transferToCoreVault.state}`);
+                if (transferToCoreVault.state === TransferToCoreVaultState.DONE && transferToCoreVault.cancelled === true) break;
+            }
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+    });
+
+    it("Should create 'returnFromCV' redemption request and cancel it", async () => {
         const bot = await createAgentBot();
         const vaultAddress = bot.agent.vaultAddress;
         await mintAndDepositVaultCollateralToOwner(context, bot.agent, toBN(depositAmountUSDC), ownerAddress);
@@ -801,4 +855,80 @@ describe("AgentBot cli commands unit tests", () => {
         }
     });
 
+    it("Should create and confirm'returnFromCV' redemption request", async () => {
+        const bot = await createAgentBot();
+        const vaultAddress = bot.agent.vaultAddress;
+        await mintAndDepositVaultCollateralToOwner(context, bot.agent, toBN(depositAmountUSDC), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
+        await botCliCommands.enterAvailableList(vaultAddress);
+        const amountToWithdraw = toBN(10e6);
+        // topup
+        await fundUnderlying(context, bot.owner.workAddress, amountToWithdraw.muln(2));
+        await botCliCommands.underlyingTopUp(bot.agent.vaultAddress, amountToWithdraw.muln(2));
+        for (let i = 0; i < 5; i++) {
+            await bot.runStep(orm.em);
+            await time.increase(100);
+            chain.mine(10);
+        }
+        // execute minting
+        const minter = await createTestMinter(context, minterAddress, chain);
+        const crt = await minter.reserveCollateral(vaultAddress, 10);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        // transfer to core vault
+        const result = await botCliCommands.getMaximumTransferToCoreVault(vaultAddress);
+        const res = await botCliCommands.transferToCoreVault(vaultAddress, result.maximumTransferUBA);
+        const transferRedemptionId = toBN(res.transferRedemptionRequestId);
+        // run agent's steps and wait for redemption with request id = transferRedemptionId
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, bot);
+            await time.advanceBlock();
+            chain.mine();
+            await bot.runStep(orm.em);
+            // check if redemption exist
+            orm.em.clear();
+            const redemption = await orm.em.findOne(AgentRedemption, { requestId: transferRedemptionId }  as FilterQuery<AgentRedemption> );
+            if (redemption) {
+                console.log(`Agent step ${i}, state = ${redemption.state}`);
+                if (redemption.state === AgentRedemptionState.DONE) break;
+            }
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        // allow return from cv for agent
+        await bot.context.coreVaultManager?.addAllowedDestinationAddresses([bot.agent.underlyingAddress], { from: governance })
+        const resReturn = await botCliCommands.returnFromCoreVault(vaultAddress, toBN(1));
+        // run agent's steps and wait for return from cv
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, bot);
+            await time.advanceBlock();
+            chain.mine();
+            await bot.runStep(orm.em);
+            // check if redemption exist
+            orm.em.clear();
+            const returnFromCoreVault = await orm.em.findOne(ReturnFromCoreVault, { requestId: resReturn.requestId }  as FilterQuery<ReturnFromCoreVault> );
+            if (returnFromCoreVault) {
+                console.log(`Agent step ${i}, state = ${returnFromCoreVault.state}`);
+                if (returnFromCoreVault.state === ReturnFromCoreVaultState.STARTED) break;
+            }
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        await triggerInstructionsAndPayFromCV(bot);
+        // run agent's steps and wait for return from cv to be performed
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, bot);
+            await time.advanceBlock();
+            chain.mine();
+            await bot.runStep(orm.em);
+            // check if redemption exist
+            orm.em.clear();
+            const returnFromCoreVault = await orm.em.findOne(ReturnFromCoreVault, { requestId: resReturn.requestId }  as FilterQuery<ReturnFromCoreVault> );
+            if (returnFromCoreVault) {
+                console.log(`Agent step ${i}, state = ${returnFromCoreVault.state}`);
+                if (returnFromCoreVault.state === ReturnFromCoreVaultState.DONE) break;
+            }
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+    });
 });
