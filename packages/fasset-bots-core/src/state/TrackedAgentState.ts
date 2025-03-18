@@ -1,6 +1,6 @@
 import BN from "bn.js";
-import { AgentAvailable, AgentCollateralTypeChanged, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
-import { AgentVaultCreated, RedeemedInCollateral, SelfMint } from "../../typechain-truffle/IIAssetManager";
+import { AgentAvailable, AgentCollateralTypeChanged, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
+import { AgentVaultCreated, CollateralReservationDeleted, RedeemedInCollateral, ReturnFromCoreVaultConfirmed, ReturnFromCoreVaultRequested, SelfMint } from "../../typechain-truffle/IIAssetManager";
 import { AgentInfo, AgentStatus, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { roundUBAToAmg } from "../fasset/Conversions";
 import { EventArgs } from "../utils/events/common";
@@ -80,6 +80,9 @@ export class TrackedAgentState {
     poolRedeemingUBA: BN = BN_ZERO;
     dustUBA: BN = BN_ZERO;
     underlyingBalanceUBA: BN = BN_ZERO;
+
+    // returns from core vault
+    returnFromCoreVaultUBA: BN = BN_ZERO;
 
     // safeguard metadata
     initBlock: number | null = null; // block at which the initial agent info was fetch at
@@ -180,6 +183,29 @@ export class TrackedAgentState {
     handleCollateralReservationDeleted(args: EventArgs<CollateralReservationDeleted>) {
         this.reservedUBA = this.reservedUBA.sub(toBN(args.reservedAmountUBA));
         logger.info(`Tracked State Agent handled collateral reservation deleted: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
+    }
+
+    // handlers: return from core vault
+    handleReturnFromCoreVaultRequested(args: EventArgs<ReturnFromCoreVaultRequested>) {
+        this.returnFromCoreVaultUBA = toBN(args.valueUBA);
+        this.reservedUBA = this.reservedUBA.add(this.returnFromCoreVaultUBA);
+        logger.info(`Tracked State Agent handled return from core vault requested ${formatArgs(this.getTrackedStateAgentSettings())}.`);
+    }
+
+    handleReturnFromCoreVaultCancelled() {
+        this.reservedUBA = this.reservedUBA.sub(this.returnFromCoreVaultUBA);
+        this.returnFromCoreVaultUBA = BN_ZERO;
+        logger.info(`Tracked State Agent handled return from core vault cancelled ${formatArgs(this.getTrackedStateAgentSettings())}.`);
+    }
+
+    handleReturnFromCoreVaultConfirmed(args: EventArgs<ReturnFromCoreVaultConfirmed>) {
+        const mintedAmountUBA = toBN(args.remintedUBA);
+        this.mintedUBA = this.mintedUBA.add(mintedAmountUBA);
+        const receivedUnderlyingUBA = toBN(args.receivedUnderlyingUBA);
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.add(receivedUnderlyingUBA);
+        this.reservedUBA = this.reservedUBA.sub(this.returnFromCoreVaultUBA);
+        this.returnFromCoreVaultUBA = BN_ZERO;
+        logger.info(`Tracked State Agent handled return from core vault confirmed ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // handlers: redemption and self-close

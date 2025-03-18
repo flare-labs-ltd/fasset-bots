@@ -251,6 +251,15 @@ export class TrackedState {
         } else if (eventIs(event, this.context.assetManager, "DustChanged")) {
             logger.info(`Tracked State received event 'DustChanged' with data ${formatArgs(event.args)}.`);
             (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleDustChanged(event.args);
+        } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultRequested")) {
+            logger.info(`Tracked State received event 'ReturnFromCoreVaultRequested' with data ${formatArgs(event.args)}.`);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleReturnFromCoreVaultRequested(event.args);
+        } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultCancelled")) {
+            logger.info(`Tracked State received event 'ReturnFromCoreVaultCancelled' with data ${formatArgs(event.args)}.`);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleReturnFromCoreVaultCancelled();
+        } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultConfirmed")) {
+            logger.info(`Tracked State received event 'ReturnFromCoreVaultConfirmed' with data ${formatArgs(event.args)}.`);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleReturnFromCoreVaultConfirmed(event.args);
         }
         for (const collateral of this.collaterals.list) {
             const contract = await tokenContract(collateral.token);
