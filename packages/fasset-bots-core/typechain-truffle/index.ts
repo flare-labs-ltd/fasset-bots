@@ -18,6 +18,7 @@ import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
+import { AgentAlwaysAllowedMintersFacetContract } from "./AgentAlwaysAllowedMintersFacet";
 import { AgentCollateralFacetContract } from "./AgentCollateralFacet";
 import { AgentInfoFacetContract } from "./AgentInfoFacet";
 import { AgentPingFacetContract } from "./AgentPingFacet";
@@ -128,6 +129,7 @@ import { GovernedMockContract } from "./GovernedMock";
 import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
 import { ReentrancyAttackMockContract } from "./ReentrancyAttackMock";
 import { ReentrancyMockContract } from "./ReentrancyMock";
+import { IAgentAlwaysAllowedMintersContract } from "./IAgentAlwaysAllowedMinters";
 import { IAgentOwnerRegistryContract } from "./IAgentOwnerRegistry";
 import { IAgentPingContract } from "./IAgentPing";
 import { IAgentVaultContract } from "./IAgentVault";
@@ -224,6 +226,9 @@ export type * from "./types";
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "IERC165"): IERC165Contract;
+      require(
+        name: "AgentAlwaysAllowedMintersFacet"
+      ): AgentAlwaysAllowedMintersFacetContract;
       require(name: "AgentCollateralFacet"): AgentCollateralFacetContract;
       require(name: "AgentInfoFacet"): AgentInfoFacetContract;
       require(name: "AgentPingFacet"): AgentPingFacetContract;
@@ -374,6 +379,9 @@ export type * from "./types";
       ): GovernedWithTimelockMockContract;
       require(name: "ReentrancyAttackMock"): ReentrancyAttackMockContract;
       require(name: "ReentrancyMock"): ReentrancyMockContract;
+      require(
+        name: "IAgentAlwaysAllowedMinters"
+      ): IAgentAlwaysAllowedMintersContract;
       require(name: "IAgentOwnerRegistry"): IAgentOwnerRegistryContract;
       require(name: "IAgentPing"): IAgentPingContract;
       require(name: "IAgentVault"): IAgentVaultContract;
@@ -500,6 +508,10 @@ export {
 export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
+export {
+  AgentAlwaysAllowedMintersFacetContract,
+  AgentAlwaysAllowedMintersFacetInstance,
+} from "./AgentAlwaysAllowedMintersFacet";
 export {
   AgentCollateralFacetContract,
   AgentCollateralFacetInstance,
@@ -856,6 +868,10 @@ export {
   ReentrancyMockContract,
   ReentrancyMockInstance,
 } from "./ReentrancyMock";
+export {
+  IAgentAlwaysAllowedMintersContract,
+  IAgentAlwaysAllowedMintersInstance,
+} from "./IAgentAlwaysAllowedMinters";
 export {
   IAgentOwnerRegistryContract,
   IAgentOwnerRegistryInstance,

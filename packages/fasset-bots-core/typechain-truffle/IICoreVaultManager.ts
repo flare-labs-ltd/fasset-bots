@@ -70,6 +70,7 @@ export interface EscrowInstructions {
     account: string;
     destination: string;
     amount: BN;
+    fee: BN;
     cancelAfterTs: BN;
     0: BN;
     1: string;
@@ -77,6 +78,7 @@ export interface EscrowInstructions {
     3: string;
     4: BN;
     5: BN;
+    6: BN;
   };
 }
 
@@ -94,9 +96,11 @@ export interface PaymentConfirmed {
   name: "PaymentConfirmed";
   args: {
     transactionId: string;
+    paymentReference: string;
     amount: BN;
     0: string;
-    1: BN;
+    1: string;
+    2: BN;
   };
 }
 
@@ -107,12 +111,14 @@ export interface PaymentInstructions {
     account: string;
     destination: string;
     amount: BN;
+    fee: BN;
     paymentReference: string;
     0: BN;
     1: string;
     2: string;
     3: BN;
-    4: string;
+    4: BN;
+    5: string;
   };
 }
 
@@ -130,9 +136,11 @@ export interface SettingsUpdated {
     escrowEndTimeSeconds: BN;
     escrowAmount: BN;
     minimalAmount: BN;
+    fee: BN;
     0: BN;
     1: BN;
     2: BN;
+    3: BN;
   };
 }
 
@@ -140,9 +148,11 @@ export interface TransferRequestCanceled {
   name: "TransferRequestCanceled";
   args: {
     destinationAddress: string;
+    paymentReference: string;
     amount: BN;
     0: string;
-    1: BN;
+    1: string;
+    2: BN;
   };
 }
 
@@ -150,11 +160,13 @@ export interface TransferRequested {
   name: "TransferRequested";
   args: {
     destinationAddress: string;
+    paymentReference: string;
     amount: BN;
     cancelable: boolean;
     0: string;
-    1: BN;
-    2: boolean;
+    1: string;
+    2: BN;
+    3: boolean;
   };
 }
 
@@ -229,10 +241,6 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  cancelableTransferRequestsAmount(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
 
   confirmPayment: {
     (
@@ -422,6 +430,10 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
 
   getPreimageHashesCount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
+  getSettings(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
+
   getTriggeringAccounts(
     txDetails?: Truffle.TransactionDetails
   ): Promise<string[]>;
@@ -446,10 +458,6 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
   ): Promise<BN>;
 
   nextUnusedPreimageHashIndex(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  nonCancelableTransferRequestsAmount(
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
@@ -514,6 +522,10 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  totalRequestAmountWithFee(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   triggerInstructions: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -544,10 +556,6 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    cancelableTransferRequestsAmount(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
 
     confirmPayment: {
       (
@@ -739,6 +747,10 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
 
     getPreimageHashesCount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
+    getSettings(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
+
     getTriggeringAccounts(
       txDetails?: Truffle.TransactionDetails
     ): Promise<string[]>;
@@ -763,10 +775,6 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
     ): Promise<BN>;
 
     nextUnusedPreimageHashIndex(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    nonCancelableTransferRequestsAmount(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
@@ -830,6 +838,10 @@ export interface IICoreVaultManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    totalRequestAmountWithFee(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     triggerInstructions: {
       (txDetails?: Truffle.TransactionDetails): Promise<

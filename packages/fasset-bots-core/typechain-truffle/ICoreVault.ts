@@ -18,9 +18,11 @@ export interface CoreVaultRedemptionRequested {
     redeemer: string;
     paymentAddress: string;
     valueUBA: BN;
+    feeUBA: BN;
     0: string;
     1: string;
     2: BN;
+    3: BN;
   };
 }
 

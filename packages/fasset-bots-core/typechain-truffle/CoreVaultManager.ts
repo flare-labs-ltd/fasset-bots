@@ -88,6 +88,7 @@ export interface EscrowInstructions {
     account: string;
     destination: string;
     amount: BN;
+    fee: BN;
     cancelAfterTs: BN;
     0: BN;
     1: string;
@@ -95,6 +96,7 @@ export interface EscrowInstructions {
     3: string;
     4: BN;
     5: BN;
+    6: BN;
   };
 }
 
@@ -140,9 +142,11 @@ export interface PaymentConfirmed {
   name: "PaymentConfirmed";
   args: {
     transactionId: string;
+    paymentReference: string;
     amount: BN;
     0: string;
-    1: BN;
+    1: string;
+    2: BN;
   };
 }
 
@@ -153,12 +157,14 @@ export interface PaymentInstructions {
     account: string;
     destination: string;
     amount: BN;
+    fee: BN;
     paymentReference: string;
     0: BN;
     1: string;
     2: string;
     3: BN;
-    4: string;
+    4: BN;
+    5: string;
   };
 }
 
@@ -176,9 +182,11 @@ export interface SettingsUpdated {
     escrowEndTimeSeconds: BN;
     escrowAmount: BN;
     minimalAmount: BN;
+    fee: BN;
     0: BN;
     1: BN;
     2: BN;
+    3: BN;
   };
 }
 
@@ -202,9 +210,11 @@ export interface TransferRequestCanceled {
   name: "TransferRequestCanceled";
   args: {
     destinationAddress: string;
+    paymentReference: string;
     amount: BN;
     0: string;
-    1: BN;
+    1: string;
+    2: BN;
   };
 }
 
@@ -212,11 +222,13 @@ export interface TransferRequested {
   name: "TransferRequested";
   args: {
     destinationAddress: string;
+    paymentReference: string;
     amount: BN;
     cancelable: boolean;
     0: string;
-    1: BN;
-    2: boolean;
+    1: string;
+    2: BN;
+    3: boolean;
   };
 }
 
@@ -403,10 +415,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  cancelableTransferRequestsAmount(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
   chainId(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   confirmPayment: {
@@ -551,10 +559,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
 
   custodianAddress(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-  escrowAmount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  escrowEndTimeSeconds(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
   escrowedFunds(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   executeGovernanceCall: {
@@ -627,6 +631,10 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
   ): Promise<string>;
 
   getPreimageHashesCount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  getSettings(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
 
   getTriggeringAccounts(
     txDetails?: Truffle.TransactionDetails
@@ -726,8 +734,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
-  minimalAmount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
   nextSequenceNumber(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   nextUnprocessedEscrowIndex(
@@ -735,10 +741,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
   ): Promise<BN>;
 
   nextUnusedPreimageHashIndex(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  nonCancelableTransferRequestsAmount(
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
@@ -915,6 +917,10 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
+  totalRequestAmountWithFee(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   triggerInstructions: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -980,24 +986,28 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
       _escrowEndTimeSeconds: number | BN | string,
       _escrowAmount: number | BN | string,
       _minimalAmount: number | BN | string,
+      _fee: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _escrowEndTimeSeconds: number | BN | string,
       _escrowAmount: number | BN | string,
       _minimalAmount: number | BN | string,
+      _fee: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _escrowEndTimeSeconds: number | BN | string,
       _escrowAmount: number | BN | string,
       _minimalAmount: number | BN | string,
+      _fee: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _escrowEndTimeSeconds: number | BN | string,
       _escrowAmount: number | BN | string,
       _minimalAmount: number | BN | string,
+      _fee: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1161,10 +1171,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    cancelableTransferRequestsAmount(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
     chainId(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     confirmPayment: {
@@ -1311,10 +1317,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
 
     custodianAddress(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-    escrowAmount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    escrowEndTimeSeconds(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
     escrowedFunds(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     executeGovernanceCall: {
@@ -1387,6 +1389,10 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
 
     getPreimageHashesCount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    getSettings(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
 
     getTriggeringAccounts(
       txDetails?: Truffle.TransactionDetails
@@ -1486,8 +1492,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
-    minimalAmount(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
     nextSequenceNumber(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     nextUnprocessedEscrowIndex(
@@ -1495,10 +1499,6 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
     ): Promise<BN>;
 
     nextUnusedPreimageHashIndex(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    nonCancelableTransferRequestsAmount(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
@@ -1675,6 +1675,10 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
+    totalRequestAmountWithFee(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     triggerInstructions: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -1740,24 +1744,28 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
         _escrowEndTimeSeconds: number | BN | string,
         _escrowAmount: number | BN | string,
         _minimalAmount: number | BN | string,
+        _fee: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _escrowEndTimeSeconds: number | BN | string,
         _escrowAmount: number | BN | string,
         _minimalAmount: number | BN | string,
+        _fee: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _escrowEndTimeSeconds: number | BN | string,
         _escrowAmount: number | BN | string,
         _minimalAmount: number | BN | string,
+        _fee: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _escrowEndTimeSeconds: number | BN | string,
         _escrowAmount: number | BN | string,
         _minimalAmount: number | BN | string,
+        _fee: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

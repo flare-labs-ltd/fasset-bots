@@ -679,6 +679,12 @@
           "internalType": "uint256",
           "name": "valueUBA",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeUBA",
+          "type": "uint256"
         }
       ],
       "name": "CoreVaultRedemptionRequested",
@@ -1992,6 +1998,24 @@
           "type": "address"
         },
         {
+          "internalType": "address",
+          "name": "_minter",
+          "type": "address"
+        }
+      ],
+      "name": "addAlwaysAllowedMinterForAgent",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
           "internalType": "uint256",
           "name": "_query",
           "type": "uint256"
@@ -2143,6 +2167,25 @@
           "internalType": "uint256",
           "name": "_count",
           "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "alwaysAllowedMintersForAgent",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
       "stateMutability": "view",
@@ -5932,6 +5975,24 @@
         }
       ],
       "name": "rejectedRedemptionPaymentDefault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_minter",
+          "type": "address"
+        }
+      ],
+      "name": "removeAlwaysAllowedMinterForAgent",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

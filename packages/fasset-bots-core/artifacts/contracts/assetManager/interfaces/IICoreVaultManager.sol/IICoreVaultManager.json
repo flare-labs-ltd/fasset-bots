@@ -123,6 +123,12 @@
         {
           "indexed": false,
           "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
           "name": "cancelAfterTs",
           "type": "uint256"
         }
@@ -149,6 +155,12 @@
           "indexed": true,
           "internalType": "bytes32",
           "name": "transactionId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
           "type": "bytes32"
         },
         {
@@ -190,6 +202,12 @@
         },
         {
           "indexed": false,
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
           "internalType": "bytes32",
           "name": "paymentReference",
           "type": "bytes32"
@@ -222,15 +240,21 @@
         },
         {
           "indexed": false,
-          "internalType": "uint128",
+          "internalType": "uint256",
           "name": "escrowAmount",
-          "type": "uint128"
+          "type": "uint256"
         },
         {
           "indexed": false,
-          "internalType": "uint128",
+          "internalType": "uint256",
           "name": "minimalAmount",
-          "type": "uint128"
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
         }
       ],
       "name": "SettingsUpdated",
@@ -244,6 +268,12 @@
           "internalType": "string",
           "name": "destinationAddress",
           "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
         },
         {
           "indexed": false,
@@ -263,6 +293,12 @@
           "internalType": "string",
           "name": "destinationAddress",
           "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
         },
         {
           "indexed": false,
@@ -349,19 +385,6 @@
       "name": "cancelTransferRequestFromCoreVault",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "cancelableTransferRequestsAmount",
-      "outputs": [
-        {
-          "internalType": "uint128",
-          "name": "",
-          "type": "uint128"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -772,6 +795,34 @@
     },
     {
       "inputs": [],
+      "name": "getSettings",
+      "outputs": [
+        {
+          "internalType": "uint128",
+          "name": "_escrowEndTimeSeconds",
+          "type": "uint128"
+        },
+        {
+          "internalType": "uint128",
+          "name": "_escrowAmount",
+          "type": "uint128"
+        },
+        {
+          "internalType": "uint128",
+          "name": "_minimalAmount",
+          "type": "uint128"
+        },
+        {
+          "internalType": "uint128",
+          "name": "_fee",
+          "type": "uint128"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "getTriggeringAccounts",
       "outputs": [
         {
@@ -878,19 +929,6 @@
     },
     {
       "inputs": [],
-      "name": "nonCancelableTransferRequestsAmount",
-      "outputs": [
-        {
-          "internalType": "uint128",
-          "name": "",
-          "type": "uint128"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
       "name": "pause",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -954,6 +992,19 @@
       "name": "requestTransferFromCoreVault",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalRequestAmountWithFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {

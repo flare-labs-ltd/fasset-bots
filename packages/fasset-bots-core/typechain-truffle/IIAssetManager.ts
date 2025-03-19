@@ -316,9 +316,11 @@ export interface CoreVaultRedemptionRequested {
     redeemer: string;
     paymentAddress: string;
     valueUBA: BN;
+    feeUBA: BN;
     0: string;
     1: string;
     2: BN;
+    3: BN;
   };
 }
 
@@ -1068,6 +1070,29 @@ export type AllEvents =
   | VaultCollateralWithdrawalAnnounced;
 
 export interface IIAssetManagerInstance extends Truffle.ContractInstance {
+  addAlwaysAllowedMinterForAgent: {
+    (
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   addCollateralType: {
     (
       _data: {
@@ -1207,6 +1232,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN }>;
+
+  alwaysAllowedMintersForAgent(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string[]>;
 
   announceAgentPoolTokenRedemption: {
     (
@@ -4132,6 +4162,29 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  removeAlwaysAllowedMinterForAgent: {
+    (
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _minter: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   requestReturnFromCoreVault: {
     (
       _agentVault: string,
@@ -5861,6 +5914,29 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
   };
 
   methods: {
+    addAlwaysAllowedMinterForAgent: {
+      (
+        _agentVault: string,
+        _minter: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _minter: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _minter: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _minter: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     addCollateralType: {
       (
         _data: {
@@ -6000,6 +6076,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;
+
+    alwaysAllowedMintersForAgent(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string[]>;
 
     announceAgentPoolTokenRedemption: {
       (
@@ -8927,6 +9008,29 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    removeAlwaysAllowedMinterForAgent: {
+      (
+        _agentVault: string,
+        _minter: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _minter: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _minter: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _minter: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

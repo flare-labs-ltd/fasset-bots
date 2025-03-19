@@ -23,6 +23,12 @@
           "internalType": "uint256",
           "name": "valueUBA",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeUBA",
+          "type": "uint256"
         }
       ],
       "name": "CoreVaultRedemptionRequested",
