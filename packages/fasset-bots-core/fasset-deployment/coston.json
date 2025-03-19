@@ -257,7 +257,7 @@
   {
     "name": "AgentVaultProxyImplementation",
     "contractName": "AgentVault.sol",
-    "address": "0xF575260b27aACd8076fFe0Fb8e3576F81e065cfD"
+    "address": "0x299d678f67e7ADD4efdf295Ebe0E92FCb4f75C4c"
   },
   {
     "name": "CollateralPoolProxyImplementation",
@@ -272,7 +272,7 @@
   {
     "name": "AgentVaultFactory",
     "contractName": "AgentVaultFactory.sol",
-    "address": "0x3A1B05A74155327aE7c54219b1b62Ecf1EB3b6B5"
+    "address": "0x1a6d9C80a2BCD949C6Fb87E9c2a98342970c3c0D"
   },
   {
     "name": "CollateralPoolFactory",
@@ -372,42 +372,47 @@
   {
     "name": "CollateralReservationsFacet",
     "contractName": "CollateralReservationsFacet.sol",
-    "address": "0xE73CEFC69168AF6f53A8A405AFd079963ec90973"
+    "address": "0xF2e2DB9dA5431AE1C8a1bd43e704Cdb617D3c9Ec"
   },
   {
     "name": "MintingFacet",
     "contractName": "MintingFacet.sol",
-    "address": "0x3D8f7C29Ac55b5987721432c606F206DE8EaBC42"
+    "address": "0x98f9b377A198F6f7FfA1274d0b03735E07Ef1b77"
   },
   {
     "name": "RedemptionRequestsFacet",
     "contractName": "RedemptionRequestsFacet.sol",
-    "address": "0xe8397F9630794fB3573807C120eacbE6A98963Ad"
+    "address": "0x36ecfc639BbB5405492AE74606D6404003649e84"
   },
   {
     "name": "RedemptionConfirmationsFacet",
     "contractName": "RedemptionConfirmationsFacet.sol",
-    "address": "0xbEf69D030bfd0514A26ffa00A40567263c878990"
+    "address": "0xd927432cc5F3F7d9cB42e9d5BCDf74cd59db9265"
   },
   {
     "name": "RedemptionDefaultsFacet",
     "contractName": "RedemptionDefaultsFacet.sol",
-    "address": "0x6864726B7F7DD227c724DA68c650eC6172443BDc"
+    "address": "0x5F81cf2D3A780C3802dBC09923BA88D7D935Ee93"
+  },
+  {
+    "name": "RedemptionHandshakeFacet",
+    "contractName": "RedemptionHandshakeFacet.sol",
+    "address": "0xD3B828309703dC5732A471216DF748c5171482C4"
   },
   {
     "name": "LiquidationFacet",
     "contractName": "LiquidationFacet.sol",
-    "address": "0x20010a766284A2e885D51E8b904D50a3D379a958"
+    "address": "0xD745612ae0879928e360A66436d7F80BbEdbbEb0"
   },
   {
     "name": "ChallengesFacet",
     "contractName": "ChallengesFacet.sol",
-    "address": "0xA43f2D04B9C4abe20d8DdB6Fa7592c43b180D7D7"
+    "address": "0x381C6FCc6186B6fBB3712c0c2440638177AFD110"
   },
   {
     "name": "UnderlyingBalanceFacet",
     "contractName": "UnderlyingBalanceFacet.sol",
-    "address": "0x15753A4d9748701F3F6a65F58A57B5D3deeB4D25"
+    "address": "0x4B556B75bd4c02df1d7e2a767eFf77bA0Df816D3"
   },
   {
     "name": "UnderlyingTimekeepingFacet",
@@ -417,12 +422,12 @@
   {
     "name": "AgentVaultManagementFacet",
     "contractName": "AgentVaultManagementFacet.sol",
-    "address": "0xF2d1596Bf5a771B633C30553F6606250114D4D7D"
+    "address": "0x380bf43baD30852B699bdC3609a1d96c8E890b2f"
   },
   {
     "name": "AgentSettingsFacet",
     "contractName": "AgentSettingsFacet.sol",
-    "address": "0xcAFb74346a0229aD82faC8000C51904Be2186C1c"
+    "address": "0x1Bb53967bd183a410574575Cc59708EA13542461"
   },
   {
     "name": "CollateralTypesFacet",
@@ -483,5 +488,31 @@
     "name": "EmergencyPauseTransfersFacet",
     "contractName": "EmergencyPauseTransfersFacet.sol",
     "address": "0xc11CCc3705E9D6ec51119eCB9c21168426CAD5cf"
+  },
+  {
+    "name": "CoreVaultManagerImplementation",
+    "contractName": "CoreVaultManager.sol",
+    "address": "0xcf27c7d6D938220438f0F5F206083c247cd8520b"
+  },
+  {
+    "name": "CoreVaultManager_FTestXRP",
+    "contractName": "CoreVaultManager.sol",
+    "address": "0xCC9206d850fb9140019E78e6b2B309193a34DA3c",
+    "mustSwitchToProduction": true
+  },
+  {
+    "name": "AgentAlwaysAllowedMintersFacet",
+    "contractName": "AgentAlwaysAllowedMintersFacet.sol",
+    "address": "0xe929C8C7f9Ec2C3d96a713e3A4f1B9F8aE4Ee718"
+  },
+  {
+    "name": "CoreVaultFacet",
+    "contractName": "CoreVaultFacet.sol",
+    "address": "0x4ECC5317969Fc1802918aa0Fc24B7ee29063819E"
+  },
+  {
+    "name": "CoreVaultSettingsFacet",
+    "contractName": "CoreVaultSettingsFacet.sol",
+    "address": "0x751F035d2bDA74Ef1602B3175BeaF9c5A6Fd78B2"
   }
 ]
