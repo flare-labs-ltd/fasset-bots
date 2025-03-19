@@ -1,11 +1,11 @@
 import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentInfoReader, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, createBotOrm, loadAgentConfigFile, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, exp10, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { AMGSettings, APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, DepositableVaultCVData, ExtendedAgentVaultInfo, RedeemableVaultCVData, RedemptionQueueData, RequestableVaultCVData, TransferToCVFee, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, DepositableVaultCVData, ExtendedAgentVaultInfo, RedeemableVaultCVData, RedemptionQueueData, RequestableVaultCVData, TransferToCVFee, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO, Alerts, DelegateDTO } from "../../common/AgentSettingsDTO";
@@ -888,15 +888,15 @@ export class AgentService {
         const settings = await cli.context.assetManager.getSettings();
         const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
         const lotSizeAsset = lotSize.toNumber() / 10 ** Number(settings.assetDecimals);
-        const cvEscrowAmount = await cli.context.coreVaultManager?.escrowAmount() as BN;
-        const cvAvailableFunds = await cli.context.coreVaultManager?.availableFunds() as BN;
-        const allFunds = cvEscrowAmount.add(cvAvailableFunds);
-        const cancelableTransferRequestsAmount = await cli.context.coreVaultManager?.cancelableTransferRequestsAmount() as BN;
-        const nonCancelableTransferRequestsAmount = await cli.context.coreVaultManager?.nonCancelableTransferRequestsAmount() as BN;
-        const requestedAmount = cancelableTransferRequestsAmount.add(nonCancelableTransferRequestsAmount);
         let totalCoreVaultAmount = toBN(0);
-        if (allFunds.gt(requestedAmount)) {
-            totalCoreVaultAmount = allFunds.sub(requestedAmount);
+        if (cli.context.coreVaultManager != null) {
+            const cvEscrowAmount = await cli.context.coreVaultManager.escrowedFunds();
+            const cvAvailableFunds = await cli.context.coreVaultManager.availableFunds();
+            const allFunds = cvEscrowAmount.add(cvAvailableFunds);
+            const requestedAmount = await cli.context.coreVaultManager.totalRequestAmountWithFee();
+            if (allFunds.gt(requestedAmount)) {
+                totalCoreVaultAmount = allFunds.sub(requestedAmount);
+            }
         }
         const requestableLots = totalCoreVaultAmount.div(lotSize);
         return {requestableLotsCV: requestableLots.toNumber(), requestableLotsVault: Number(info.freeCollateralLots), lotSize: lotSizeAsset};

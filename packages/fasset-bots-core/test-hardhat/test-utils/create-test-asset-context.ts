@@ -464,7 +464,7 @@ export function testTimekeeperTimingConfig(overrides?: Partial<TimekeeperTimingC
     };
 }
 
-export async function assignCoreVaultManager(assetManager: IIAssetManagerInstance, addressUpdater: AddressUpdaterInstance, coreVaultUnderlyingAddress: string, coreVaultCustodian?: string, initialNonce: BNish = 1) {
+export async function assignCoreVaultManager(assetManager: IIAssetManagerInstance, addressUpdater: AddressUpdaterInstance, coreVaultUnderlyingAddress: string, coreVaultCustodian?: string, initialNonce: BNish = 1, triggeringAccount?: string) {
     const coreVaultManagerImpl = await CoreVaultManager.new();
     const settings = await assetManager.getSettings();
     const governanceSettings = await assetManager.governanceSettings();
@@ -474,6 +474,8 @@ export async function assignCoreVaultManager(assetManager: IIAssetManagerInstanc
         assetManager.address, settings.chainId, coreVaultCustodianAddress, coreVaultUnderlyingAddress, initialNonce);
     const coreVaultManager = await CoreVaultManager.at(coreVaultManagerProxy.address);
     await addressUpdater.updateContractAddresses([coreVaultManager.address], { from: governance });
+    await coreVaultManager.addTriggeringAccounts([triggeringAccount ?? governance], { from: governance });
+    await coreVaultManager.updateSettings(0, 0, 0, 50, { from: governance });
     await waitForTimelock(assetManager.setCoreVaultManager(coreVaultManager.address, { from: governance }), assetManager, governance);
     return coreVaultManager;
 }
