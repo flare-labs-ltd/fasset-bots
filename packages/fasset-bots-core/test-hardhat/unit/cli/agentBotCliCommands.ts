@@ -269,6 +269,37 @@ describe("AgentBot cli commands unit tests", () => {
         );
     });
 
+    it("Should run command 'updateAgentSetting' with 'redemptionPoolFeeShareBIPS'", async () => {
+        const agentBot = await createAgentBot();
+        const agent = agentBot.agent;
+        const initialRedemptionPoolFeeShareBIPS = toBN(await agent.getAgentSetting("redemptionPoolFeeShareBIPS"));
+        expect(initialRedemptionPoolFeeShareBIPS.eq(BN_ZERO)).to.be.true;
+        // update redemptionPoolFeeShareBIPS
+        const settingsName = "redemptionPoolFeeShareBIPS";
+        const updateValue1 = "1100";
+        await botCliCommands.updateAgentSetting(agent.vaultAddress, settingsName, updateValue1);
+        const settingsUpdates = await orm.em.find(AgentUpdateSetting, { agentAddress: agent.vaultAddress, name: settingsName } as FilterQuery<AgentUpdateSetting>, { orderBy: { id: ('ASC') } });
+        expect(settingsUpdates[0].state).to.eq(AgentUpdateSettingState.WAITING);
+        time.increaseTo(settingsUpdates[0].validAt);
+        // run agent's steps until setting is updated
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check settings is updated
+            orm.em.clear();
+            const setting = await orm.em.findOneOrFail(AgentUpdateSetting, { name: settingsName }  as FilterQuery<AgentUpdateSetting> );
+            console.log(`Agent step ${i}, state = ${setting.state}`);
+            if (setting.state === AgentUpdateSettingState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        // check
+        const updatedRedemptionPoolFeeShareBIPS = toBN(await agent.getAgentSetting("redemptionPoolFeeShareBIPS"));
+        expect(updatedRedemptionPoolFeeShareBIPS.eq(toBN(updateValue1))).to.be.true;
+
+    });
+
     it("Should get pool fees balance'", async () => {
         const agent = await createAgent();
         await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmountUSDC), ownerAddress);
