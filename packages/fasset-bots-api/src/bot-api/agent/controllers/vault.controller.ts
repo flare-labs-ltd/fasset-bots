@@ -252,4 +252,26 @@ export class AgentVaultController {
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.redeemFromCV(fAssetSymbol, agentVaultAddress,lots));
     }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Post("cancelCVTransfer/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
+    public async cancelTransferToCoreVault(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.cancelTransferToCoreVault(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Post("cancelCVWithdrawal/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
+    public async cancelWithdrawalFromCoreVault(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.cancelRequestFromCoreVault(fAssetSymbol, agentVaultAddress));
+    }
 }
