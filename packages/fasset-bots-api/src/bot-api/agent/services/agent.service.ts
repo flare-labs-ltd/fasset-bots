@@ -68,7 +68,7 @@ export class AgentService {
             if (!this.isRunning) {
                 this.isRunning = true;
                 try {
-                    console.log("Updating queue");
+                    //console.log("Updating queue");
                     await this.updateRedemptionQueue();
                 } catch (error) {
                     //logger.error(`'Error running getPools:`, error);
@@ -608,7 +608,7 @@ export class AgentService {
             const priceUSD = cflrPrice.price.mul(toBNExp(1, 18));
             const prices = [{ symbol: cli.context.nativeChainInfo.tokenSymbol, price: priceUSD, decimals: Number(cflrPrice.decimals) }];
 
-            const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
+            const lotSize =  toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
             // For each vault calculate needed info
             for (const vault of agentVaults) {
                 await vault.updateSettings.init()
@@ -622,7 +622,7 @@ export class AgentService {
                 }
                 const info = await this.getAgentVaultInfoFull(vault.vaultAddress, cli);
                 const infoVault = await cli.context.assetManager.getAgentInfo(vault.vaultAddress);
-                const mintedLots = Number(info.mintedUBA) / lotSize;
+                const mintedLots = toBN(info.mintedUBA).div(lotSize);
                 const vaultCR = formatCR(info.vaultCollateralRatioBIPS);
                 const poolCR = formatCR(info.poolCollateralRatioBIPS);
                 const mintedAmount = Number(info.mintedUBA) / Number(settings.assetUnitUBA);
@@ -681,7 +681,7 @@ export class AgentService {
                     delegates.push({address: del[0][i], delegation: (Number(del[1][i])/100).toString()});
                     delegationPercentage = delegationPercentage + (Number(del[1][i])/100);
                 }
-                const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
+                const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable as unknown as boolean, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
                     vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), Number(await collateralToken.decimals()), { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
@@ -697,11 +697,11 @@ export class AgentService {
                     handshakeType: Number(info.handshakeType),
                     delegates: delegates,
                     delegationPercentage: delegationPercentage.toString(),
-                    allLots: (Number(info.freeCollateralLots) + mintedLots).toString(),
+                    allLots: (Number(info.freeCollateralLots) + mintedLots.toNumber()).toString(),
                     transferableToCV: "10,200.24",
                     underlyingSymbol: cli.context.chainInfo.symbol,
                     transferableFromCV: "10,200.24",
-                    redeemCapacity: (Number(info.mintedUBA)/lotSize).toString()
+                    redeemCapacity: (toBN(info.mintedUBA).div(lotSize)).toString()
                 };
                 allVaults.push(vaultInfo);
             }
@@ -883,6 +883,9 @@ export class AgentService {
     }
 
     async getVaultRequestableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RequestableVaultCVData> {
+        if(!fAssetSymbol.includes("XRP")) {
+            return {requestableLotsCV: 0, requestableLotsVault: 0, lotSize: 0};
+        }
         const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const settings = await cli.context.assetManager.getSettings();
@@ -903,6 +906,9 @@ export class AgentService {
     }
 
     async getVaultRedeemableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RedeemableVaultCVData> {
+        if(!fAssetSymbol.includes("XRP")) {
+            return {redeemableLotsOwner: 0, requestableLotsCV: 0, minimumLotsToRedeem: 0, lotSize: 0};
+        }
         const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
         const settings = await cli.context.assetManager.getSettings();
         const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
@@ -917,6 +923,9 @@ export class AgentService {
     }
 
     async getVaultDepositableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<DepositableVaultCVData> {
+        if(!fAssetSymbol.includes("XRP")) {
+            return {underlyingBalance: "0", transferableBalance: "0"};
+        }
         const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
         // amount to mint
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
@@ -929,6 +938,9 @@ export class AgentService {
     //minimumRemainingAfterTransferForCollateralAMG(minBIPS: BN, )
 
     async requestCVDeposit(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        if(!fAssetSymbol.includes("XRP")) {
+            return;
+        }
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currency = await Currencies.fassetUnderlyingToken(cli.context);
         const amountUBA = currency.parse(amount);
@@ -936,19 +948,28 @@ export class AgentService {
     }
 
     async requestCVWithdrawal(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
+        if(!fAssetSymbol.includes("XRP")) {
+            return;
+        }
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.returnFromCoreVault(agentVaultAddress, lots);
     }
 
     async transferToCVFee(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<TransferToCVFee> {
         const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        if(!fAssetSymbol.includes("XRP")) {
+            return {fee: "0", symbol: cli.context.nativeChainInfo.tokenSymbol, feeUSD: "0"};
+        }
         const settings = await cli.context.assetManager.getSettings();
         const priceReader = await TokenPriceReader.create(settings);
         const cflrPrice = await priceReader.getPrice(cli.context.nativeChainInfo.tokenSymbol, false, settings.maxTrustedPriceAgeSeconds);
         const priceUSD = cflrPrice.price.mul(toBNExp(1, 18));
-        const feeWei = toBNExp(123,18);
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        const amountUBA = currency.parse(amount);
+        const feeWei = await cli.context.assetManager.transferToCoreVaultFee(amountUBA);
         const feeCvUsd = toBN(feeWei).mul(priceUSD).div(toBNExp(1, 18 + Number(cflrPrice.decimals)));
-        return {fee: "1,500.12", symbol: cli.context.nativeChainInfo.tokenSymbol, feeUSD: formatFixed(feeCvUsd, 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
+        const fee = formatFixed(feeWei, 18, { decimals: 3, groupDigits: true, groupSeparator: "," })
+        return {fee: fee, symbol: cli.context.nativeChainInfo.tokenSymbol, feeUSD: formatFixed(feeCvUsd, 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
     }
 
     async redeemFromCV(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
@@ -975,6 +996,22 @@ export class AgentService {
 
     async getRedemptionQueueData(): Promise<RedemptionQueueData> {
         return {mintedLots: this.mintedLots, redemptionQueueLots: this.redemptionQueueLots};
+    }
+
+    async cancelRequestFromCoreVault(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
+        if(!fAssetSymbol.includes("XRP")) {
+            return;
+        }
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.cancelReturnFromCoreVault(agentVaultAddress);
+    }
+
+    async cancelTransferToCoreVault(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
+        if(!fAssetSymbol.includes("XRP")) {
+            return;
+        }
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.cancelTransferToCoreVault(agentVaultAddress);
     }
 
 }

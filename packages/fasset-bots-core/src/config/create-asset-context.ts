@@ -69,7 +69,7 @@ export async function createNativeContext(config: BotConfig, chainConfig: BotFAs
     const retriever = config.contractRetriever;
     const assetManager = chainConfig.assetManager;
     const settings = await assetManager.getSettings();
-    const coreVaultManagerAddress = await assetManager.getCoreVaultManager();
+    const coreVaultManagerAddress = chainConfig.fAssetSymbol.includes("XRP") ? await assetManager.getCoreVaultManager() : ZERO_ADDRESS;
     return {
         fAssetSymbol: chainConfig.fAssetSymbol,
         nativeChainInfo: config.nativeChainInfo,
