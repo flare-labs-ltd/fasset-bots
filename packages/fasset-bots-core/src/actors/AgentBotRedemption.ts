@@ -11,7 +11,7 @@ import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { EventArgs } from "../utils/events/common";
 import { squashSpace } from "../utils/formatting";
-import { assertNotNull, BN_ZERO, BNish, errorIncluded, MAX_BIPS, messageForExpectedError, requireNotNull, toBN, UTXO_BLOCK_SIZE_IN_KB } from "../utils/helpers";
+import { assertNotNull, BN_ZERO, BNish, errorIncluded, MAX_BIPS, messageForExpectedError, requireNotNull, toBN, TRANSACTION_FEE_FACTOR_CV_REDEMPTION, UTXO_BLOCK_SIZE_IN_KB } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -364,12 +364,21 @@ export class AgentBotRedemption {
         const redemptionPoolFeeShareBIPS = toBN(await this.agent.getAgentSetting("redemptionPoolFeeShareBIPS"));
         const poolFeeUBA = redemptionFee.mul(redemptionPoolFeeShareBIPS).divn(MAX_BIPS);
         let maxRedemptionFee = redemptionFee.sub(poolFeeUBA);
-        if (maxRedemptionFee.eq(BN_ZERO)) {
+        if (maxRedemptionFee.eq(BN_ZERO)) { // special redemption ticket - `transferToCoreVault`
             const coreVaultSourceAddress = await requireNotNull(this.context.coreVaultManager).coreVaultAddress();
-            if (redemption.paymentAddress === coreVaultSourceAddress) {
+            if (redemption.paymentAddress === coreVaultSourceAddress) { // additional check
                 const currentFee = await this.context.wallet.getTransactionFee({source: this.agent.underlyingAddress, destination: redemption.paymentAddress, isPayment: true, amount: redemption.valueUBA});
-                maxRedemptionFee = currentFee.muln(2);
+                maxRedemptionFee = currentFee.muln(TRANSACTION_FEE_FACTOR_CV_REDEMPTION);
+                const safeToUseFreeUnderlying = await this.bot.getSafeToWithdrawUnderlying(); // check if enough safe free underlying to pay for fee
+                if (maxRedemptionFee.gt(safeToUseFreeUnderlying)) {
+                    logger.error(`Cannot pay for redemption ${redemption.requestId}, maxFee ${maxRedemptionFee.toString()} is greater than safe free underlying ${safeToUseFreeUnderlying.toString()}`);
+                    await this.notifier.sendTransferToCVRedemptionNoFreeUnderlying(redemption.requestId, maxRedemptionFee, safeToUseFreeUnderlying);
+                    return;
+                }
             }
+        } else {
+            logger.error(`Cannot pay for redemption ${redemption.requestId}, maxFee=${maxRedemptionFee.toString()}`);
+            return;
         }
 
         redemption = await this.updateRedemption(rootEm, redemption, {

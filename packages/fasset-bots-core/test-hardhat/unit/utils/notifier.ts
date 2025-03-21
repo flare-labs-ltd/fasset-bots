@@ -2,7 +2,7 @@ import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { MockNotifierTransport } from "../../../src/mock/MockNotifierTransport";
-import { FormattedString, HOURS } from "../../../src/utils";
+import { FormattedString, HOURS, toBN } from "../../../src/utils";
 import { AgentNotificationKey, AgentNotifier, agentNotifierThrottlingTimes } from "../../../src/utils/notifier/AgentNotifier";
 import { BotType, NotificationLevel } from "../../../src/utils/notifier/BaseNotifier";
 import { ChallengerNotifier } from "../../../src/utils/notifier/ChallengerNotifier";
@@ -436,6 +436,12 @@ describe("Notifier tests", () => {
     it("Should send agent transfer to cv performed", async () => {
         const spySend = spy.on(notifier, "sendTransferToCVPerformed");
         await notifier.sendTransferToCVPerformed("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent cv redemption cannot be paid", async () => {
+        const spySend = spy.on(notifier, "sendTransferToCVRedemptionNoFreeUnderlying");
+        await notifier.sendTransferToCVRedemptionNoFreeUnderlying("requestId", toBN(0), toBN(0));
         expect(spySend).to.have.been.called.once;
     });
 

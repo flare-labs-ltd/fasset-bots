@@ -21,7 +21,7 @@ import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, errorIncluded, isEnumValue, maxBN, requireNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, TRANSACTION_FEE_FACTOR_CV_REDEMPTION, errorIncluded, isEnumValue, maxBN, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -832,6 +832,8 @@ export class AgentBotCommands {
 
 
     /**
+     * transferToCoreVault creates a special redemption ticket for the agent. The amount on this ticket must be transferred in full.
+     * The agent needs to use freeUnderlying to pay the underlying transaction fee.
      * @param agentVault agent's vault address
      * @param amount amount to be transferred
      */
@@ -849,7 +851,7 @@ export class AgentBotCommands {
         const safeToWithdraw = await this.getSafeToWithdrawUnderlying(agentVault);
         const coreVaultSourceAddress = await requireNotNull(this.context.coreVaultManager).coreVaultAddress();
         const underlyingFee = await agentBot.context.wallet.getTransactionFee({source: agentBot.agent.underlyingAddress, amount: toBN(amount), destination: coreVaultSourceAddress, isPayment: true })
-        if (toBN(safeToWithdraw).lt(underlyingFee.muln(2))) {
+        if (toBN(safeToWithdraw).lt(underlyingFee.muln(TRANSACTION_FEE_FACTOR_CV_REDEMPTION))) { // multiply by a constant to be on the safe side, in case the underlying fee changes until redemption ticket is actually paid on the underlying.
             logger.error(`Agent ${agentVault} cannot transfer funds. Not enough free underlying ${currency.formatValue(safeToWithdraw)} to pay for underlying transaction fee ${currency.formatValue(underlyingFee)}.`);
             throw new CommandLineError(`Cannot transfer funds. Not enough free underlying ${currency.formatValue(safeToWithdraw)} to pay for underlying transaction fee ${currency.formatValue(underlyingFee)}.`);
         }

@@ -108,6 +108,7 @@ export enum AgentNotificationKey {
     TRANSFER_TO_CV_STARTED = "TRANSFER TO CORE VAULT STARTED",
     TRANSFER_TO_CV_CANCELLED = "TRANSFER TO CORE VAULT CANCELLED",
     TRANSFER_TO_CV_PERFORMED = "TRANSFER TO CORE VAULT PERFORMED",
+    TRANSFER_TO_CV_REDEMPTION = "CORE VAULT REDEMPTION",
     RETURN_FROM_CV_STARTED = "RETURN FROM CORE VAULT STARTED",
     RETURN_FROM_CV_CANCELLED = "RETURN FROM CORE VAULT CANCELLED",
     RETURN_FROM_CV_PERFORMED = "RETURN FROM CORE VAULT PERFORMED",
@@ -630,6 +631,13 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(
             AgentNotificationKey.TRANSFER_TO_CV_PERFORMED,
             `Transfer to core vault ${requestId} was successful for agent ${this.address}.`
+        );
+    }
+
+    async sendTransferToCVRedemptionNoFreeUnderlying(requestId: BNish, maxRedemptionFee: BNish, safeToUseFreeUnderlying: BNish) {
+        await this.danger(
+            AgentNotificationKey.TRANSFER_TO_CV_REDEMPTION,
+            `Agent ${this.address} cannot pay core vault redemption ${requestId}. Not enough safe free underlying ${safeToUseFreeUnderlying}, needed ${maxRedemptionFee}.`
         );
     }
 

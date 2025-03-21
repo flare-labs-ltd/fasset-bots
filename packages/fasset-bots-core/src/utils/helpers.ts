@@ -34,7 +34,8 @@ export const DEFAULT_TIMEOUT = 15000;
 export const DEFAULT_RETRIES = 3;
 export const DEFAULT_RETRY_DELAY_MS = 2000;
 
-export const TRANSACTION_FEE_FACTOR = 1.4;
+export const TRANSACTION_FEE_FACTOR = 1.4; // used in the calculation of the required underlying balance
+export const TRANSACTION_FEE_FACTOR_CV_REDEMPTION = 2; // used for `transferToCoreVault` to ensure sufficient `freeUnderlying`
 
 /**
  * Asynchronously wait `ms` milliseconds.
