@@ -89,6 +89,7 @@ export async function createTestChainContracts(governance: string, updateExecuto
     // create flare data connector
     const relay = await Relay.new();
     const fdcHub = await FdcHub.new();
+    const coreVaultManager = await CoreVaultManager.new();
     // create agent vault factory
     const agentVaultImplementation = await AgentVault.new(ZERO_ADDRESS);
     const agentVaultFactory = await AgentVaultFactory.new(agentVaultImplementation.address);
@@ -142,6 +143,7 @@ export async function createTestChainContracts(governance: string, updateExecuto
         TestUSDT: newContract("TestUSDT", "FakeERC20.sol", testUSDT.address),
         TestETH: newContract("TestETH", "FakeERC20.sol", testETH.address),
         FtsoV2PriceStore: newContract("FtsoV2PriceStore", "FtsoV2PriceStore.sol", priceStore.address),
+        CoreVaultManager_FTestXRP: newContract("CoreVaultManager", "CoreVaultManager", coreVaultManager.address),
     };
     return contracts;
 }

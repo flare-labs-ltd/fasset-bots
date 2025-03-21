@@ -15,6 +15,7 @@ import type { OptionValues } from "commander";
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 const AssetManagerController = artifacts.require("AssetManagerController");
+const CoreVaultManager = artifacts.require("CoreVaultManager");
 
 const program = programWithCommonOptions("util", "all_fassets");
 
@@ -106,6 +107,15 @@ program
         const options: { config: string; secrets: string } = program.opts();
         await finalizeAgentClosedBetaRegistration(options.secrets, options.config);
     })
+
+program
+    .command("allowDestinationAddress")
+    .description("allow destination address to receive core vault underlying funds")
+    .argument("address", "underlying address")
+    .action(async (address: string) => {
+        const options: { config: string; secrets: string } = program.opts();
+        await allowDestinationAddress(options.secrets, options.config, address);
+    });
 
 toplevelRun(async () => {
     await program.parseAsync();
@@ -263,4 +273,12 @@ async function transferNatFromDeployer(secretsFile: string, configFile: string, 
         gas: '2000000',
         gasPrice: gasPrice // 250 Gwei
     });
+}
+
+async function allowDestinationAddress(secretsFile: string, configFileName: string, underlyingAddress: string) {
+    const [secrets, config] = await initEnvironment(secretsFile, configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const deployerAddress = secrets.required("deployer.address");
+    const coreVaultManager = await CoreVaultManager.at(contracts.CoreVaultManager_FTestXRP.address);
+    await coreVaultManager.addAllowedDestinationAddresses([underlyingAddress], { from: deployerAddress });
 }

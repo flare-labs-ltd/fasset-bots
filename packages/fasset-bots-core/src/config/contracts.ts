@@ -27,6 +27,7 @@ export interface ChainContracts {
     CollateralPoolTokenFactory: Contract;
     PriceReader: Contract;
     AgentOwnerRegistry: Contract;
+    CoreVaultManager_FTestXRP: Contract;
     // others (asset managers & fassets & everything from flare-smart-contract)
     [key: string]: Contract | undefined;
 }
