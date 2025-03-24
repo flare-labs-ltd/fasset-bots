@@ -1,9 +1,14 @@
 import { ITransactionMonitor, TransactionInfo } from "@flarelabs/simple-wallet";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
+import { XRPBlockchainAPI } from "../../../simple-wallet/src/blockchain-apis/XRPBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../../simple-wallet/src/blockchain-apis/UTXOBlockchainAPI";
 
 export class FaultyWallet implements IBlockChainWallet {
     monitoringId(): string {
         throw new Error("Method not implemented.");
+    }
+    getBlockChainAPI(): XRPBlockchainAPI | UTXOBlockchainAPI{
+        throw new Error("Not implemented");
     }
     async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee, executeUntilBlock?: number, executeUntilTimestamp?: import("bn.js")): Promise<string> {
         throw new Error("Method not implemented.");

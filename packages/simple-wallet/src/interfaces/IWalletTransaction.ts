@@ -2,6 +2,8 @@ import { EntityManager } from "@mikro-orm/core";
 import { TransactionStatus } from "../entity/transaction";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
+import { XRPBlockchainAPI } from "../blockchain-apis/XRPBlockchainAPI";
+import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
 
 export interface WalletAccountGenerationInterface {
    chainType: ChainType;
@@ -43,6 +45,8 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
    createMonitor(): Promise<ITransactionMonitor>;
 
    getMonitoringId(): string;
+
+   getBlockChainAPI(): XRPBlockchainAPI | UTXOBlockchainAPI;
 }
 
 export interface ITransactionMonitor {

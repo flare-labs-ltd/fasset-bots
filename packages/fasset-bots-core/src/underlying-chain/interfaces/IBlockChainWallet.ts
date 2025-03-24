@@ -1,5 +1,7 @@
 import { FeeParams, ITransactionMonitor, TransactionInfo } from "@flarelabs/simple-wallet";
 import type BN from "bn.js";
+import { XRPBlockchainAPI } from "../../../../simple-wallet/src/blockchain-apis/XRPBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../../../simple-wallet/src/blockchain-apis/UTXOBlockchainAPI";
 
 type NumberLike = BN | number | string;
 
@@ -86,6 +88,7 @@ export interface IBlockChainWallet {
     // Background tasks
     createMonitor(): Promise<ITransactionMonitor>;
 
-    //
     monitoringId(): string;
+
+    getBlockChainAPI(): XRPBlockchainAPI | UTXOBlockchainAPI;
 }

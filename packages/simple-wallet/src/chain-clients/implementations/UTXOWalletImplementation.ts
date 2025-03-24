@@ -105,6 +105,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         return this.monitoringId;
     }
 
+    getBlockChainAPI(): UTXOBlockchainAPI {
+        return this.blockchainAPI;
+    }
+
     async getAccountBalance(account: string): Promise<BN> {
         logger.info(`Received request to fetch balance for account ${account}.`);
         return await getAccountBalance(this.blockchainAPI, account);

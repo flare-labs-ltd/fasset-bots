@@ -3,6 +3,8 @@ import { requireNotNull, sleep, toBN, unPrefix0x } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
 import { formatArgs, logger } from "../utils";
+import { XRPBlockchainAPI } from "../../../simple-wallet/src/blockchain-apis/XRPBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../../simple-wallet/src/blockchain-apis/UTXOBlockchainAPI";
 
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
@@ -196,6 +198,9 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         this.requestStopVal = true;
     }
 
+    getBlockChainAPI(): XRPBlockchainAPI | UTXOBlockchainAPI {
+        return this.walletClient.getBlockChainAPI();
+    }
     /* istanbul ignore next */
     private async ensureWalletMonitoringRunning(monitor: ITransactionMonitor) {
         const someMonitorRunning = await monitor.runningMonitorId() != null;

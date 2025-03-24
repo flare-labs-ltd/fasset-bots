@@ -3,7 +3,7 @@ import "dotenv/config";
 import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import chalk from "chalk";
-import { InfoBotCommands } from "..";
+import { ChainId, InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig, getHandshakeAddressVerifier } from "../config/BotConfig";
@@ -12,8 +12,8 @@ import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/confi
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { Secrets } from "../config/secrets";
-import { AgentEntity } from "../entities/agent";
-import { AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
+import { AgentEntity, AgentRedemption, TransferToCoreVault } from "../entities/agent";
+import { AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, TransferToCoreVaultState } from "../entities/common";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -32,6 +32,7 @@ import { TransactionStatus, WalletAddressEntity } from "@flarelabs/simple-wallet
 import { requiredEventArgs } from "../utils/events/truffle";
 import { EventArgs } from "../utils/events/common";
 import { ReturnFromCoreVaultRequested, TransferToCoreVaultStarted } from "../../typechain-truffle/IIAssetManager";
+import { XRPBlockchainAPI } from "../../../simple-wallet/src/blockchain-apis/XRPBlockchainAPI";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -865,14 +866,53 @@ export class AgentBotCommands {
     }
 
     /**
+     * Allows cancelling the transfer only if desired redemption is in the bot's database and the underlying transaction cannot be accepted on the chain.
      * @param agentVault agent's vault address
      */
-    async cancelTransferToCoreVault(agentVault: string): Promise<void> {
+    async cancelTransferToCoreVault(agentVault: string, forceCancel: boolean = false): Promise<void> {
         logger.info(`Agent ${agentVault} is trying to cancel transferring of underlying to core vault.`);
         const { agentBot } = await this.getAgentBot(agentVault);
-        // cancel transfer
-        await this.context.assetManager.cancelTransferToCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
-        logger.info(`Agent ${agentVault} successfully cancelled transfer of underlying to core vault.`);
+        if (forceCancel) {
+            await this.context.assetManager.cancelTransferToCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
+            logger.info(`Agent ${agentVault} successfully cancelled transfer of underlying to core vault.`);
+            return;
+        }
+        // support only XRP and testXRP for now
+        const chainName = this.context.chainInfo.chainId.chainName
+        if (chainName != ChainId.XRP.chainName && chainName != ChainId.testXRP.chainName) return this.logCannotCancelTransferToCV(agentVault);
+        // find valid transfer to CV
+        const transferToCV = await this.orm.em.findOne(TransferToCoreVault, { agentAddress: agentVault, state: TransferToCoreVaultState.STARTED });
+        if (!transferToCV) return this.logCannotCancelTransferToCV(agentVault);
+        // find valid corresponding redemption
+        const transferRedemption = await this.orm.em.findOne(AgentRedemption, { agentAddress: agentVault, requestId: transferToCV.requestId, state: AgentRedemptionState.STARTED });
+        if (!transferRedemption || !transferRedemption?.txDbId) return this.logCannotCancelTransferToCV(agentVault);
+        // get underlying tx info and hash
+        const transactionInfo = await this.context.wallet.checkTransactionStatus(transferRedemption.txDbId);
+        let transactionHash: string | null = null;
+        if (transactionInfo.status === TransactionStatus.TX_FAILED) {
+            transactionHash = transactionInfo.transactionHash
+        } else if (transactionInfo.status === TransactionStatus.TX_REPLACED && transactionInfo.replacedByStatus === TransactionStatus.TX_FAILED) {
+            transactionHash = transactionInfo.replacedByHash;
+        }
+        if (!transactionHash) return this.logCannotCancelTransferToCV(agentVault);
+        try {
+            // check if transaction exist on chain
+            const blockChainAPI = this.context.wallet.getBlockChainAPI() as XRPBlockchainAPI;
+            const txResp = await blockChainAPI.getTransaction(transactionHash);
+            if (txResp.data.result.validated === false) { // not in found in any ledger
+                const { agentBot } = await this.getAgentBot(agentVault);
+                await this.context.assetManager.cancelTransferToCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
+                logger.info(`Agent ${agentVault} successfully cancelled transfer of underlying to core vault.`);
+            }
+        } catch (error) {
+            logger.error(`Agent ${agentVault} cannot cancel transfer of underlying to core vault.`, error);
+            return this.logCannotCancelTransferToCV(agentVault);
+        }
+    }
+
+    private logCannotCancelTransferToCV(agentVault: string): void {
+        logger.warn(`Agent ${agentVault} cannot cancel transfer of underlying to core vault.`);
+        console.warn(`Agent ${agentVault} cannot cancel transfer of underlying to core vault.`);
     }
 
     /**

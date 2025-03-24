@@ -79,6 +79,10 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       return this.monitoringId;
    }
 
+   getBlockChainAPI(): XRPBlockchainAPI {
+      return this.blockchainAPI;
+   }
+
    /**
     * @param {string} account
     * @returns {BN} - balance in drops
