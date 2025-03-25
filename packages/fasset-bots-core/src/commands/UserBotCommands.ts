@@ -512,6 +512,23 @@ export class UserBotCommands {
         return { total: list.length, successful, defaulted, expired, remaining };
     }
 
+        /**
+     * Redeems desired amount of lots from core vault.
+     * @param lots number of lots to redeem
+     */
+        async redeemFromCoreVault(lots: BNish): Promise<void> {
+            const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
+            const minRedeemLots = await this.context.assetManager.getCoreVaultMinimumRedeemLots();
+            if(toBN(lots).lt(toBN(minRedeemLots))) {
+                console.log(`You have to redeem at least ${minRedeemLots.toString()} lots.`);
+                return;
+            }
+            console.log(`Asking for redemption from core vault of ${lots} lots`);
+            logger.info(`User ${this.nativeAddress} is asking for core vault redemption of ${lots} lots.`);
+            await redeemer.requestRedemptionFromCoreVault(lots);
+            console.log(`Asked for redemption of ${lots} from core vault.`);
+        }
+
     async listRedemption(requestId: string): Promise<void> {
         const state = this.readState("redeem", requestId);
         const timestamp = await latestBlockTimestamp();

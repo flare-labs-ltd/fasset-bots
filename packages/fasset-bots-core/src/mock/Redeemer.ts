@@ -1,7 +1,7 @@
 import { ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import { assert } from "chai";
-import { DustChanged, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
+import { CoreVaultRedemptionRequested, DustChanged, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent } from "../fasset/Agent";
 import { EventArgs } from "../utils/events/common";
@@ -94,5 +94,11 @@ export class Redeemer {
         const executor = executorAddress !== ZERO_ADDRESS ? executorAddress : this.address;
         const res = await this.assetManager.rejectedRedemptionPaymentDefault(requestId, { from: executor });
         return requiredEventArgs(res, 'RedemptionDefault');
+    }
+
+    async requestRedemptionFromCoreVault(lots: BNish): Promise<EventArgs<CoreVaultRedemptionRequested>[]> {
+        const res = await this.assetManager.redeemFromCoreVault(lots, this.underlyingAddress, { from: this.address });
+        const redemptionRequest = filterEvents(res, 'CoreVaultRedemptionRequested').map(e => e.args);
+        return redemptionRequest;
     }
 }

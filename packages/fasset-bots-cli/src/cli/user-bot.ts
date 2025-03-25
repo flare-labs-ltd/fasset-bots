@@ -293,6 +293,23 @@ program
         }
     });
 
+program
+    .command("redeemFromCoreVault")
+    .description("Triggers redemption")
+    .argument("<numberOfLots>")
+    .action(async (numberOfLots: string) => {
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
+        validateInteger(numberOfLots, "Number of lots", { min: 1 });
+        try {
+            await redeemerBot.redeemFromCoreVault(numberOfLots);
+        } catch (error) {
+            translateError(error, {
+                "f-asset balance too low": `User account does not hold ${numberOfLots} lots of ${options.fasset}.`
+            });
+        }
+    });
+
 async function getPoolAddress(bot: PoolUserBotCommands, poolAddressOrTokenSymbol: string) {
     return Web3.utils.isAddress(poolAddressOrTokenSymbol)
         ? poolAddressOrTokenSymbol
