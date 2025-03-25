@@ -11,7 +11,7 @@ import { WalletServiceConfigBase } from "../interfaces/IWalletTransaction";
 import { ChainType, DOGE_DEFAULT_FEE_PER_KB, SATS_PER_BTC_DOGE } from "../utils/constants";
 import BN from "bn.js";
 import { toBN } from "../utils/bnutils";
-import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
+import { getConfirmedAfter, getDustAmount } from "../chain-clients/utxo/UTXOUtils";
 import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
 import { stuckTransactionConstants } from "../utils/utils";
 import { logger } from "../utils/logger";
@@ -120,13 +120,15 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
         return await this.logRequest(`getUTXOsFromMempool(${address})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOResponse[]>(`/utxo/${address}`);
-            return res.data.map((utxo: UTXOResponse): MempoolUTXO => ({
-                transactionHash: utxo.txid,
-                position: utxo.vout,
-                value: toBN(utxo.value),
-                script: "",
-                confirmed: utxo.confirmations >= (stuckTransactionConstants(this.chainType).enoughConfirmations ?? /* istanbul ignore next */ getConfirmedAfter(this.chainType)),
-            }));
+            return res.data
+                .filter((utxo: UTXOResponse) => toBN(utxo.value).gt(getDustAmount(this.chainType))) // keep only utxos, where utxo.value > dustValue
+                .map((utxo: UTXOResponse): MempoolUTXO => ({
+                    transactionHash: utxo.txid,
+                    position: utxo.vout,
+                    value: toBN(utxo.value),
+                    script: "",
+                    confirmed: utxo.confirmations >= (stuckTransactionConstants(this.chainType).enoughConfirmations ?? /* istanbul ignore next */ getConfirmedAfter(this.chainType)),
+                }));
         }, "getUTXOsFromMempool"));
     }
 
