@@ -33,11 +33,11 @@ export function createCustomizedLogger(paths: LoggerPaths): Logger {
             format: format.combine(
                 format.timestamp(),
                 format.errors({ stack: true }),
-                format.printf(info => redact({
+                format.printf(info => JSON.stringify({
                     level: `${info.level}`,
                     message: `${info.message}`,
                     timestamp: `${info.timestamp}`,
-                    stack: `${info.stack}`
+                    stack: redact(`${info.stack}`)
                 }))
             ),
             filename: paths.json,
@@ -50,7 +50,7 @@ export function createCustomizedLogger(paths: LoggerPaths): Logger {
             format: format.combine(
                 format.timestamp(),
                 format.errors({ stack: true }),
-                format.printf(info => redact(`${info.timestamp}  ${formatThreadId()}${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`))
+                format.printf(info => `${info.timestamp}  ${formatThreadId()}${info.level.toUpperCase().padEnd(5)}  ${info.message}${redact(info.stack ? '\n' + info.stack : '')}`)
             ),
             filename: paths.text,
             ...(commonOptions as any),
