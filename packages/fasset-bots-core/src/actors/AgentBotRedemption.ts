@@ -375,6 +375,9 @@ export class AgentBotRedemption {
                     await this.notifier.sendTransferToCVRedemptionNoFreeUnderlying(redemption.requestId, maxRedemptionFee, safeToUseFreeUnderlying);
                     return;
                 }
+            } else {
+                logger.error(`Cannot pay for transfer to core vault redemption ${redemption.requestId}, mismatch in payment address ${redemption.paymentAddress} and and core vault source address ${coreVaultSourceAddress}`);
+                return;
             }
         }
 
