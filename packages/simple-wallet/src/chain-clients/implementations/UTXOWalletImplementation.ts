@@ -708,6 +708,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         while (getCurrentTimestampInSeconds() < end) {
             try {
                 const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
+                logger.info(`Transaction ${txId} received response: ${JSON.stringify(txResp)}`);
                 /* ignore else */
                 if (txResp && txResp.confirmations >= 0) {
                     await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
