@@ -376,9 +376,6 @@ export class AgentBotRedemption {
                     return;
                 }
             }
-        } else {
-            logger.error(`Cannot pay for redemption ${redemption.requestId}, maxFee=${maxRedemptionFee.toString()}`);
-            return;
         }
 
         redemption = await this.updateRedemption(rootEm, redemption, {
