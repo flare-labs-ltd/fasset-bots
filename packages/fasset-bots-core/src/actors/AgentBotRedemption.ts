@@ -376,7 +376,7 @@ export class AgentBotRedemption {
                     return;
                 }
             } else {
-                logger.error(`Cannot pay for transfer to core vault redemption ${redemption.requestId}, mismatch in payment address ${redemption.paymentAddress} and and core vault source address ${coreVaultSourceAddress}`);
+                logger.error(`Cannot pay for transfer to core vault redemption ${redemption.requestId}, mismatch in payment address ${redemption.paymentAddress} and core vault source address ${coreVaultSourceAddress}`);
                 return;
             }
         }
