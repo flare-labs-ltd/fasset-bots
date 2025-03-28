@@ -53,15 +53,6 @@ export class AgentBotTransferToCoreVault {
         await this.notifier.sendTransferToCVPerformed(args.transferRedemptionRequestId);
     }
 
-    async transferToCoreVaultCancelled(rootEm: EM, args: EventArgs<TransferToCoreVaultCancelled>) {
-        await this.updateTransferToCoreVault(rootEm, args.transferRedemptionRequestId, {
-            state: TransferToCoreVaultState.DONE,
-            cancelled: true
-        });
-        logger.info(`Agent ${this.agent.vaultAddress} cancelled and closed transfer to core vault ${args.transferRedemptionRequestId.toString()}.`);
-        await this.notifier.sendTransferToCVCancelled(args.transferRedemptionRequestId);
-    }
-
     async updateTransferToCoreVault(rootEm: EM, rd: BN, modifications: Partial<TransferToCoreVault>): Promise<TransferToCoreVault> {
         return await this.bot.runInTransaction(rootEm, async (em) => {
             const transferToCoreVault = await this.findTransferToCoreVault(em, rd);

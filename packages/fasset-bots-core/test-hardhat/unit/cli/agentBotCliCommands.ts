@@ -763,51 +763,6 @@ describe("AgentBot cli commands unit tests", () => {
         }
     });
 
-    it("Should cancel 'transferToCV' redemption request", async () => {
-        const bot = await createAgentBot();
-        const vaultAddress = bot.agent.vaultAddress;
-        await mintAndDepositVaultCollateralToOwner(context, bot.agent, toBN(depositAmountUSDC), ownerAddress);
-        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
-        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
-        await botCliCommands.enterAvailableList(vaultAddress);
-        const amountToWithdraw = toBN(10e6);
-        // topup
-        await fundUnderlying(context, bot.owner.workAddress, amountToWithdraw.muln(2));
-        await botCliCommands.underlyingTopUp(bot.agent.vaultAddress, amountToWithdraw.muln(2));
-        for (let i = 0; i < 5; i++) {
-            await bot.runStep(orm.em);
-            await time.increase(100);
-            chain.mine(10);
-        }
-        // execute minting
-        const minter = await createTestMinter(context, minterAddress, chain);
-        const crt = await minter.reserveCollateral(vaultAddress, 2);
-        const txHash = await minter.performMintingPayment(crt);
-        chain.mine(chain.finalizationBlocks + 1);
-        await minter.executeMinting(crt, txHash);
-        // transfer to core vault
-        const result = await botCliCommands.getMaximumTransferToCoreVault(vaultAddress);
-        const res = await botCliCommands.transferToCoreVault(vaultAddress, result.maximumTransferUBA);
-        // cancel transfer to core vault
-        await botCliCommands.cancelTransferToCoreVault(vaultAddress);
-        // run agent's steps and wait for redemption with request id = transferRedemptionId
-        const transferRedemptionId = toBN(res.transferRedemptionRequestId);
-        for (let i = 0; ; i++) {
-            await updateAgentBotUnderlyingBlockProof(context, bot);
-            await time.advanceBlock();
-            chain.mine();
-            await bot.runStep(orm.em);
-            // check if redemption exist
-            orm.em.clear();
-            const transferToCoreVault = await orm.em.findOne(TransferToCoreVault, { requestId: transferRedemptionId }  as FilterQuery<TransferToCoreVault> );
-            if (transferToCoreVault) {
-                console.log(`Agent step ${i}, state = ${transferToCoreVault.state}`);
-                if (transferToCoreVault.state === TransferToCoreVaultState.DONE && transferToCoreVault.cancelled === true) break;
-            }
-            assert.isBelow(i, 50);  // prevent infinite loops
-        }
-    });
-
     it("Should create 'returnFromCV' redemption request and cancel it", async () => {
         const bot = await createAgentBot();
         const vaultAddress = bot.agent.vaultAddress;

@@ -464,9 +464,6 @@ export class TransferToCoreVault {
     @Property({ type: BNType })
     valueUBA!: BN;
 
-    @Property({ nullable: true })
-    cancelled?: boolean;
-
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();
 

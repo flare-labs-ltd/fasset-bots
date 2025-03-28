@@ -1005,13 +1005,4 @@ export class AgentService {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.cancelReturnFromCoreVault(agentVaultAddress);
     }
-
-    async cancelTransferToCoreVault(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        if(!fAssetSymbol.includes("XRP")) {
-            return;
-        }
-        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.cancelTransferToCoreVault(agentVaultAddress);
-    }
-
 }

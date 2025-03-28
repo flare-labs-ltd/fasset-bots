@@ -522,19 +522,6 @@ program
     });
 
 program
-    .command("cancelTransferToCoreVault")
-    .description("cancellation of agent's transfer to core vault")
-    .argument("<agentVaultAddress>")
-    .option("--force", "Force cancel transfer even if conditions are not met")
-    .action(async (agentVault: string, cmdopts: { force?: boolean }) => {
-        validateAddress(agentVault, "Agent vault address");
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const secrets = await Secrets.load(options.secrets);
-        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.cancelTransferToCoreVault(agentVault, cmdopts.force);
-    });
-
-program
     .command("maximumTransferToCoreVault")
     .description("get maximum amount to transfer to core vault and minimum amount to be left on underlying")
     .argument("<agentVaultAddress>")

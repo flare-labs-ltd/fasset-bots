@@ -866,56 +866,6 @@ export class AgentBotCommands {
     }
 
     /**
-     * Allows cancelling the transfer only if desired redemption is in the bot's database and the underlying transaction cannot be accepted on the chain.
-     * @param agentVault agent's vault address
-     */
-    async cancelTransferToCoreVault(agentVault: string, forceCancel: boolean = false): Promise<void> {
-        logger.info(`Agent ${agentVault} is trying to cancel transferring of underlying to core vault.`);
-        const { agentBot } = await this.getAgentBot(agentVault);
-        if (forceCancel) {
-            await this.context.assetManager.cancelTransferToCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
-            logger.info(`Agent ${agentVault} successfully cancelled transfer of underlying to core vault.`);
-            return;
-        }
-        // support only XRP and testXRP for now
-        const chainName = this.context.chainInfo.chainId.chainName
-        if (chainName != ChainId.XRP.chainName && chainName != ChainId.testXRP.chainName) return this.logCannotCancelTransferToCV(agentVault);
-        // find valid transfer to CV
-        const transferToCV = await this.orm.em.findOne(TransferToCoreVault, { agentAddress: agentVault, state: TransferToCoreVaultState.STARTED });
-        if (!transferToCV) return this.logCannotCancelTransferToCV(agentVault);
-        // find valid corresponding redemption
-        const transferRedemption = await this.orm.em.findOne(AgentRedemption, { agentAddress: agentVault, requestId: transferToCV.requestId, state: AgentRedemptionState.STARTED });
-        if (!transferRedemption || !transferRedemption?.txDbId) return this.logCannotCancelTransferToCV(agentVault);
-        // get underlying tx info and hash
-        const transactionInfo = await this.context.wallet.checkTransactionStatus(transferRedemption.txDbId);
-        let transactionHash: string | null = null;
-        if (transactionInfo.status === TransactionStatus.TX_FAILED) {
-            transactionHash = transactionInfo.transactionHash
-        } else if (transactionInfo.status === TransactionStatus.TX_REPLACED && transactionInfo.replacedByStatus === TransactionStatus.TX_FAILED) {
-            transactionHash = transactionInfo.replacedByHash;
-        }
-        if (!transactionHash) return this.logCannotCancelTransferToCV(agentVault);
-        try {
-            // check if transaction exist on chain
-            const blockChainAPI = this.context.wallet.getBlockChainAPI() as XRPBlockchainAPI;
-            const txResp = await blockChainAPI.getTransaction(transactionHash);
-            if (txResp.data.result.validated === false) { // not in found in any ledger
-                const { agentBot } = await this.getAgentBot(agentVault);
-                await this.context.assetManager.cancelTransferToCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
-                logger.info(`Agent ${agentVault} successfully cancelled transfer of underlying to core vault.`);
-            }
-        } catch (error) {
-            logger.error(`Agent ${agentVault} cannot cancel transfer of underlying to core vault.`, error);
-            return this.logCannotCancelTransferToCV(agentVault);
-        }
-    }
-
-    private logCannotCancelTransferToCV(agentVault: string): void {
-        logger.warn(`Agent ${agentVault} cannot cancel transfer of underlying to core vault.`);
-        console.warn(`Agent ${agentVault} cannot cancel transfer of underlying to core vault.`);
-    }
-
-    /**
      * @param agentVault agent's vault address
      * @returns maximal amount to transfer and minimum amount to be left on underlying
      */
