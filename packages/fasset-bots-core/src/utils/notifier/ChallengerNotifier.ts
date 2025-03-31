@@ -5,6 +5,7 @@ enum ChallengerNotificationKey {
     DOUBLE_PAYMENT_CHALLENGE = "DOUBLE PAYMENT CHALLENGE",
     FREE_BALANCE_NEGATIVE_CHALLENGE = "FREE BALANCE NEGATIVE CHALLENGE",
     UNDERLYING_PAYMENT_CONFIRMED = "UNDERLYING PAYMENT CONFIRMED",
+    TRANSFER_TO_CORE_VAULT_DEFAULTED = "TRANSFER TO CORE VAULT DEFAULTED"
 }
 
 export class ChallengerNotifier extends BaseNotifier<ChallengerNotificationKey> {
@@ -37,6 +38,13 @@ export class ChallengerNotifier extends BaseNotifier<ChallengerNotificationKey> 
         await this.info(
             ChallengerNotificationKey.UNDERLYING_PAYMENT_CONFIRMED,
             `Challenger ${this.address} successfully confirmed underlying payment ${transactionHash} for agent ${agentVault}.`
+        );
+    }
+
+    async sendTransferToCoreVaultDefaulted(agentVault: string, reference: string) {
+        await this.info(
+            ChallengerNotificationKey.TRANSFER_TO_CORE_VAULT_DEFAULTED,
+            `Challenger ${this.address} successfully defaulted transfer to core vault with reference ${reference} for agent ${agentVault}.`
         );
     }
 }
