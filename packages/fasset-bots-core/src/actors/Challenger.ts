@@ -31,9 +31,6 @@ interface ActiveRedemption {
     startBlock: BN;
     endBlock: BN;
     endTimestamp: BN;
-    // underlying block and timestamp after which the redemption payment is invalid and can be challenged
-    validUntilBlock: BN;
-    validUntilTimestamp: BN;
 }
 
 interface ActiveWithdrawal {
@@ -150,7 +147,7 @@ export class Challenger extends ActorBase {
         }
         // handleUnconfirmedTransaction
         const latestTimestampBN = await latestBlockTimestampBN();
-        this.checkIfConfirmationNeeded(latestTimestampBN);
+        this.checkIfConfirmationNeeded(latestTimestampBN, to);
         // mark as handled
         this.lastEventUnderlyingBlockHandled = to + 1;
     }
@@ -197,10 +194,7 @@ export class Challenger extends ActorBase {
             paymentAddress: args.paymentAddress,
             startBlock:toBN(args.firstUnderlyingBlock),
             endBlock:toBN(args.lastUnderlyingBlock),
-            endTimestamp:toBN(args.lastUnderlyingTimestamp),
-            // see Challenges.sol for this calculation
-            validUntilBlock: toBN(args.lastUnderlyingBlock).add(toBN(this.state.settings.underlyingBlocksForPayment)),
-            validUntilTimestamp: toBN(args.lastUnderlyingTimestamp).add(toBN(this.state.settings.underlyingSecondsForPayment)),
+            endTimestamp:toBN(args.lastUnderlyingTimestamp)
         });
     }
 
@@ -486,7 +480,7 @@ export class Challenger extends ActorBase {
         return blockHeight;
     }
 
-    async checkIfConfirmationNeeded(latestTimestampBN: BN): Promise<void> {
+    async checkIfConfirmationNeeded(latestTimestampBN: BN, latestUnderlyingNumber: number): Promise<void> {
         logger.info(`Challenger ${this.address} is checking agent if any transactions need to be confirmed.`);
         const confirmationAllowedAfterSeconds = toBN(this.state.settings.confirmationByOthersAfterSeconds);
         for (const redemptionData of this.activeRedemptions) {
@@ -501,7 +495,8 @@ export class Challenger extends ActorBase {
                 if (!transactionHash) {
                     logger.warn(`Challenger ${this.address} cannot retrieve transaction hash for payment reference ${reference}.`)
                     const coreVaultSourceAddress = await this.context.coreVaultManager?.coreVaultAddress();
-                    if (redemption.paymentAddress === coreVaultSourceAddress) { // core vault
+                    const timeToPayPassed = await this.timeToPayPassed(latestUnderlyingNumber, redemption);
+                    if (redemption.paymentAddress === coreVaultSourceAddress && timeToPayPassed) { // core vault
                         this.confirmingReference.add(reference);
                         this.runner.startThread((scope) =>
                             this.defaultTransferToCoreVault(scope, reference, redemption, redemption.agentAddress)
@@ -585,5 +580,14 @@ export class Challenger extends ActorBase {
         } catch(error) {
             logger.error(`Challenger ${this.address} CANNOT default transfer to core vault with reference ${reference} for agent ${vaultAddress} with error ${error}.`);
         }
+    }
+
+    async timeToPayPassed(latestFinalizedUnderlyingNumber: number, redemption: ActiveRedemption): Promise<boolean> {
+        const latestFinalizedUnderlyingBlock = await this.context.blockchainIndexer.getBlockAt(latestFinalizedUnderlyingNumber);
+        const latestFinalizedUnderlyingTimestamp = latestFinalizedUnderlyingBlock?.timestamp;
+        if (latestFinalizedUnderlyingNumber && latestFinalizedUnderlyingTimestamp) {
+            return toBN(latestFinalizedUnderlyingNumber).gt(toBN(redemption.endBlock)) && toBN(latestFinalizedUnderlyingTimestamp).gt(toBN(redemption.endTimestamp));
+        }
+        return false;
     }
 }
