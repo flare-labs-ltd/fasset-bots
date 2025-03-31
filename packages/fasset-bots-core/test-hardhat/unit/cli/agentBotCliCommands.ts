@@ -41,7 +41,7 @@ describe("AgentBot cli commands unit tests", () => {
     let orm: ORM;
     let ownerAddress: string;
     const ownerUnderlyingAddress = "owner_underlying_1";
-    const coreVaultUnderlyingAddress = "CORE_VAULT_UNDERLYING"
+    const coreVaultUnderlyingAddress = "CORE_VAULT_UNDERLYING";
     let minterAddress: string;
     let botCliCommands: AgentBotCommands;
     let chain: MockChain;

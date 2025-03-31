@@ -28,6 +28,9 @@ interface ActiveRedemption {
     amount: BN;
     receivedAt: number; // event was recorded in challenger at that time
     paymentAddress: string;
+    startBlock: BN;
+    endBlock: BN;
+    endTimestamp: BN;
     // underlying block and timestamp after which the redemption payment is invalid and can be challenged
     validUntilBlock: BN;
     validUntilTimestamp: BN;
@@ -192,6 +195,9 @@ export class Challenger extends ActorBase {
             amount: toBN(args.valueUBA),
             receivedAt: await latestBlockTimestamp(),
             paymentAddress: args.paymentAddress,
+            startBlock:toBN(args.firstUnderlyingBlock),
+            endBlock:toBN(args.lastUnderlyingBlock),
+            endTimestamp:toBN(args.lastUnderlyingTimestamp),
             // see Challenges.sol for this calculation
             validUntilBlock: toBN(args.lastUnderlyingBlock).add(toBN(this.state.settings.underlyingBlocksForPayment)),
             validUntilTimestamp: toBN(args.lastUnderlyingTimestamp).add(toBN(this.state.settings.underlyingSecondsForPayment)),
@@ -220,6 +226,15 @@ export class Challenger extends ActorBase {
         this.activeRedemptions.delete(reference);
         // also mark transaction as confirmed
         await this.handleTransactionConfirmed(args.agentVault, args.transactionHash);
+    }
+
+    /**
+     * @param reference payment reference
+     */
+    async handleTransferToCoreVaultRedemptionFinished(reference: string): Promise<void> {
+        // clean up transactionForPaymentReference tracking - after redemption is finished the payment reference is immediately illegal anyway
+        this.transactionForPaymentReference.delete(reference);
+        this.activeRedemptions.delete(reference);
     }
 
     /**
@@ -426,11 +441,23 @@ export class Challenger extends ActorBase {
     /**
      * @param scope
      * @param txHash underlying transaction hash
+     * @param fromAddress or null
+     * @param toAddress or null
      * @param underlyingAddressString underlying address
      */
     async waitForPaymentProof(scope: EventScope, txHash: string, fromAddress: string | null, toAddress: string | null) {
         await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         return await this.context.attestationProvider.provePayment(txHash, fromAddress, toAddress)
+            .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError], ActorBaseKind.CHALLENGER, this.address));
+    }
+
+    /**
+     * @param scope
+     * @param reference
+     * @param activeRedemption
+     */
+    async waitForNonPaymentProof(scope: EventScope,  reference: string, redemption: ActiveRedemption) {
+        return await this.context.attestationProvider.proveReferencedPaymentNonexistence(redemption.paymentAddress, reference, redemption.amount, redemption.startBlock.toNumber(), redemption.endBlock.toNumber(), redemption.endTimestamp.toNumber())
             .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError], ActorBaseKind.CHALLENGER, this.address));
     }
 
@@ -459,7 +486,7 @@ export class Challenger extends ActorBase {
         return blockHeight;
     }
 
-    checkIfConfirmationNeeded(latestTimestampBN: BN): void {
+    async checkIfConfirmationNeeded(latestTimestampBN: BN): Promise<void> {
         logger.info(`Challenger ${this.address} is checking agent if any transactions need to be confirmed.`);
         const confirmationAllowedAfterSeconds = toBN(this.state.settings.confirmationByOthersAfterSeconds);
         for (const redemptionData of this.activeRedemptions) {
@@ -468,11 +495,21 @@ export class Challenger extends ActorBase {
             if (this.confirmingReference.has(reference)) {
                 continue;
             }
-            const validAt = confirmationAllowedAfterSeconds.add(toBN(redemption.receivedAt));
-            if (latestTimestampBN.gt(validAt)) {
+            const canConfirmAt = confirmationAllowedAfterSeconds.add(toBN(redemption.receivedAt));
+            if (latestTimestampBN.gt(canConfirmAt)) {
                 const transactionHash = this.transactionForPaymentReference.get(reference);
                 if (!transactionHash) {
                     logger.warn(`Challenger ${this.address} cannot retrieve transaction hash for payment reference ${reference}.`)
+                    const coreVaultSourceAddress = await this.context.coreVaultManager?.coreVaultAddress();
+                    if (redemption.paymentAddress === coreVaultSourceAddress) { // core vault
+                        this.confirmingReference.add(reference);
+                        this.runner.startThread((scope) =>
+                            this.defaultTransferToCoreVault(scope, reference, redemption, redemption.agentAddress)
+                                .finally(() => {
+                                    this.confirmingReference.delete(reference);
+                                })
+                            );
+                    }
                     continue;
                 }
                 this.confirmingReference.add(reference);
@@ -533,6 +570,20 @@ export class Challenger extends ActorBase {
             await this.handleAnnouncementFinished({announcementId: announcementId, agentVault: agentAddress, transactionHash})
         } catch(error) {
             logger.error(`Challenger ${this.address} CANNOT confirmed withdrawal payment ${transactionHash} for agent ${agentAddress} with error ${error}.`);
+        }
+    }
+
+    async defaultTransferToCoreVault(scope: EventScope, reference: string, redemption: ActiveRedemption, vaultAddress: string) {
+        logger.info(`Challenger ${this.address} is trying to default transfer to core vault with reference ${reference} for agent ${vaultAddress}.`);
+        try {
+            const proof = await this.waitForNonPaymentProof(scope, reference, redemption);
+            const requestId = PaymentReference.decodeId(reference);
+            await this.context.assetManager.redemptionPaymentDefault(web3DeepNormalize(proof), requestId, { from: this.address });
+            logger.info(`Challenger ${this.address} successfully defaulted transfer to core vault with ${reference} for agent ${vaultAddress}.`);
+            await this.notifier.sendTransferToCoreVaultDefaulted(vaultAddress, reference);
+            await this.handleTransferToCoreVaultRedemptionFinished(reference);
+        } catch(error) {
+            logger.error(`Challenger ${this.address} CANNOT default transfer to core vault with reference ${reference} for agent ${vaultAddress} with error ${error}.`);
         }
     }
 }
