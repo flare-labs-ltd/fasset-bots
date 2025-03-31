@@ -20,6 +20,12 @@
         },
         {
           "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
           "internalType": "uint256",
           "name": "valueUBA",
           "type": "uint256"
@@ -131,7 +137,7 @@
           "type": "uint256"
         }
       ],
-      "name": "TransferToCoreVaultCancelled",
+      "name": "TransferToCoreVaultDefaulted",
       "type": "event"
     },
     {
@@ -193,19 +199,6 @@
         }
       ],
       "name": "cancelReturnFromCoreVault",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_agentVault",
-          "type": "address"
-        }
-      ],
-      "name": "cancelTransferToCoreVault",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

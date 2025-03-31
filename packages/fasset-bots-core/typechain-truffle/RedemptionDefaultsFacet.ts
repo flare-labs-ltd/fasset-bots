@@ -14,6 +14,16 @@ export interface RedemptionDefaultsFacetContract
   ): Promise<RedemptionDefaultsFacetInstance>;
 }
 
+export interface DustChanged {
+  name: "DustChanged";
+  args: {
+    agentVault: string;
+    dustUBA: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface RedemptionDefault {
   name: "RedemptionDefault";
   args: {
@@ -32,7 +42,46 @@ export interface RedemptionDefault {
   };
 }
 
-export type AllEvents = RedemptionDefault;
+export interface RedemptionTicketCreated {
+  name: "RedemptionTicketCreated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface RedemptionTicketUpdated {
+  name: "RedemptionTicketUpdated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface TransferToCoreVaultDefaulted {
+  name: "TransferToCoreVaultDefaulted";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export type AllEvents =
+  | DustChanged
+  | RedemptionDefault
+  | RedemptionTicketCreated
+  | RedemptionTicketUpdated
+  | TransferToCoreVaultDefaulted;
 
 export interface RedemptionDefaultsFacetInstance
   extends Truffle.ContractInstance {

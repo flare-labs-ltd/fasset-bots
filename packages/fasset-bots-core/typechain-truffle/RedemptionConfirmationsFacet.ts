@@ -138,6 +138,16 @@ export interface RedemptionTicketUpdated {
   };
 }
 
+export interface TransferToCoreVaultDefaulted {
+  name: "TransferToCoreVaultDefaulted";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface TransferToCoreVaultSuccessful {
   name: "TransferToCoreVaultSuccessful";
   args: {
@@ -182,6 +192,7 @@ export type AllEvents =
   | RedemptionPerformed
   | RedemptionTicketCreated
   | RedemptionTicketUpdated
+  | TransferToCoreVaultDefaulted
   | TransferToCoreVaultSuccessful
   | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow;

@@ -17,12 +17,14 @@ export interface CoreVaultRedemptionRequested {
   args: {
     redeemer: string;
     paymentAddress: string;
+    paymentReference: string;
     valueUBA: BN;
     feeUBA: BN;
     0: string;
     1: string;
-    2: BN;
+    2: string;
     3: BN;
+    4: BN;
   };
 }
 
@@ -64,8 +66,8 @@ export interface ReturnFromCoreVaultRequested {
   };
 }
 
-export interface TransferToCoreVaultCancelled {
-  name: "TransferToCoreVaultCancelled";
+export interface TransferToCoreVaultDefaulted {
+  name: "TransferToCoreVaultDefaulted";
   args: {
     agentVault: string;
     transferRedemptionRequestId: BN;
@@ -103,30 +105,12 @@ export type AllEvents =
   | ReturnFromCoreVaultCancelled
   | ReturnFromCoreVaultConfirmed
   | ReturnFromCoreVaultRequested
-  | TransferToCoreVaultCancelled
+  | TransferToCoreVaultDefaulted
   | TransferToCoreVaultStarted
   | TransferToCoreVaultSuccessful;
 
 export interface ICoreVaultInstance extends Truffle.ContractInstance {
   cancelReturnFromCoreVault: {
-    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  cancelTransferToCoreVault: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -360,24 +344,6 @@ export interface ICoreVaultInstance extends Truffle.ContractInstance {
 
   methods: {
     cancelReturnFromCoreVault: {
-      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _agentVault: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _agentVault: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _agentVault: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    cancelTransferToCoreVault: {
       (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;

@@ -867,7 +867,7 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
       _amount: number | BN | string,
       _cancelable: boolean,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<string>;
     sendTransaction(
       _destinationAddress: string,
       _paymentReference: string,
@@ -1625,7 +1625,7 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
         _amount: number | BN | string,
         _cancelable: boolean,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<string>;
       sendTransaction(
         _destinationAddress: string,
         _paymentReference: string,

@@ -37,6 +37,10 @@ export interface ICoreVaultSettingsInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  getCoreVaultTransferTimeExtensionSeconds(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   setCoreVaultManager: {
     (
       _coreVaultManager: string,
@@ -150,6 +154,25 @@ export interface ICoreVaultSettingsInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setCoreVaultTransferTimeExtensionSeconds: {
+    (
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
     getCoreVaultManager(
       txDetails?: Truffle.TransactionDetails
@@ -172,6 +195,10 @@ export interface ICoreVaultSettingsInstance extends Truffle.ContractInstance {
     ): Promise<BN>;
 
     getCoreVaultTransferFeeBIPS(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getCoreVaultTransferTimeExtensionSeconds(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
@@ -284,6 +311,25 @@ export interface ICoreVaultSettingsInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _transferFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultTransferTimeExtensionSeconds: {
+      (
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _transferTimeExtensionSeconds: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

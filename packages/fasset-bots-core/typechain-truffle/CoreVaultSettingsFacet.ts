@@ -125,6 +125,10 @@ export interface CoreVaultSettingsFacetInstance
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  getCoreVaultTransferTimeExtensionSeconds(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -134,6 +138,7 @@ export interface CoreVaultSettingsFacetInstance
       _coreVaultManager: string,
       _nativeAddress: string,
       _transferFeeBIPS: number | BN | string,
+      _transferTimeExtensionSeconds: number | BN | string,
       _redemptionFeeBIPS: number | BN | string,
       _minimumAmountLeftBIPS: number | BN | string,
       _minimumRedeemLots: number | BN | string,
@@ -143,6 +148,7 @@ export interface CoreVaultSettingsFacetInstance
       _coreVaultManager: string,
       _nativeAddress: string,
       _transferFeeBIPS: number | BN | string,
+      _transferTimeExtensionSeconds: number | BN | string,
       _redemptionFeeBIPS: number | BN | string,
       _minimumAmountLeftBIPS: number | BN | string,
       _minimumRedeemLots: number | BN | string,
@@ -152,6 +158,7 @@ export interface CoreVaultSettingsFacetInstance
       _coreVaultManager: string,
       _nativeAddress: string,
       _transferFeeBIPS: number | BN | string,
+      _transferTimeExtensionSeconds: number | BN | string,
       _redemptionFeeBIPS: number | BN | string,
       _minimumAmountLeftBIPS: number | BN | string,
       _minimumRedeemLots: number | BN | string,
@@ -161,6 +168,7 @@ export interface CoreVaultSettingsFacetInstance
       _coreVaultManager: string,
       _nativeAddress: string,
       _transferFeeBIPS: number | BN | string,
+      _transferTimeExtensionSeconds: number | BN | string,
       _redemptionFeeBIPS: number | BN | string,
       _minimumAmountLeftBIPS: number | BN | string,
       _minimumRedeemLots: number | BN | string,
@@ -311,6 +319,25 @@ export interface CoreVaultSettingsFacetInstance
     ): Promise<number>;
   };
 
+  setCoreVaultTransferTimeExtensionSeconds: {
+    (
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   switchToProductionMode: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -381,6 +408,10 @@ export interface CoreVaultSettingsFacetInstance
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    getCoreVaultTransferTimeExtensionSeconds(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -390,6 +421,7 @@ export interface CoreVaultSettingsFacetInstance
         _coreVaultManager: string,
         _nativeAddress: string,
         _transferFeeBIPS: number | BN | string,
+        _transferTimeExtensionSeconds: number | BN | string,
         _redemptionFeeBIPS: number | BN | string,
         _minimumAmountLeftBIPS: number | BN | string,
         _minimumRedeemLots: number | BN | string,
@@ -399,6 +431,7 @@ export interface CoreVaultSettingsFacetInstance
         _coreVaultManager: string,
         _nativeAddress: string,
         _transferFeeBIPS: number | BN | string,
+        _transferTimeExtensionSeconds: number | BN | string,
         _redemptionFeeBIPS: number | BN | string,
         _minimumAmountLeftBIPS: number | BN | string,
         _minimumRedeemLots: number | BN | string,
@@ -408,6 +441,7 @@ export interface CoreVaultSettingsFacetInstance
         _coreVaultManager: string,
         _nativeAddress: string,
         _transferFeeBIPS: number | BN | string,
+        _transferTimeExtensionSeconds: number | BN | string,
         _redemptionFeeBIPS: number | BN | string,
         _minimumAmountLeftBIPS: number | BN | string,
         _minimumRedeemLots: number | BN | string,
@@ -417,6 +451,7 @@ export interface CoreVaultSettingsFacetInstance
         _coreVaultManager: string,
         _nativeAddress: string,
         _transferFeeBIPS: number | BN | string,
+        _transferTimeExtensionSeconds: number | BN | string,
         _redemptionFeeBIPS: number | BN | string,
         _minimumAmountLeftBIPS: number | BN | string,
         _minimumRedeemLots: number | BN | string,
@@ -563,6 +598,25 @@ export interface CoreVaultSettingsFacetInstance
       ): Promise<string>;
       estimateGas(
         _transferFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultTransferTimeExtensionSeconds: {
+      (
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _transferTimeExtensionSeconds: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

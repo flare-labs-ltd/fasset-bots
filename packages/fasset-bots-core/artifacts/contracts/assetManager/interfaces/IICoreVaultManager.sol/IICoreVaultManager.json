@@ -990,7 +990,13 @@
         }
       ],
       "name": "requestTransferFromCoreVault",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_actualPaymentReference",
+          "type": "bytes32"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },

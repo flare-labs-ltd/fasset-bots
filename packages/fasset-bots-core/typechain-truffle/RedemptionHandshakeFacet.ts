@@ -140,6 +140,16 @@ export interface RedemptionTicketUpdated {
   };
 }
 
+export interface TransferToCoreVaultDefaulted {
+  name: "TransferToCoreVaultDefaulted";
+  args: {
+    agentVault: string;
+    transferRedemptionRequestId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export type AllEvents =
   | DustChanged
   | RedemptionDefault
@@ -148,7 +158,8 @@ export type AllEvents =
   | RedemptionRequested
   | RedemptionTicketCreated
   | RedemptionTicketDeleted
-  | RedemptionTicketUpdated;
+  | RedemptionTicketUpdated
+  | TransferToCoreVaultDefaulted;
 
 export interface RedemptionHandshakeFacetInstance
   extends Truffle.ContractInstance {
