@@ -44,6 +44,8 @@ export class AgentBotRedemption {
      * @param request event's RedemptionRequested arguments
      */
     async redemptionStarted(rootEm: EM, request: EventArgs<RedemptionRequested>): Promise<void> {
+        const coreVaultSourceAddress = await this.context.coreVaultManager?.coreVaultAddress();
+        const isTransferToCoreVault = coreVaultSourceAddress === request.paymentAddress;
         await this.bot.runInTransaction(rootEm, async (em) => {
             em.create(
                 AgentRedemption,
@@ -58,6 +60,7 @@ export class AgentBotRedemption {
                     paymentReference: request.paymentReference,
                     lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
                     lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
+                    isTransferToCoreVault
                 } as RequiredEntityData<AgentRedemption>,
                 { persist: true }
             );

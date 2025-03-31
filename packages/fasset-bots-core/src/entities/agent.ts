@@ -284,6 +284,9 @@ export class AgentRedemption {
     @Property({ nullable: true })
     defaulted?: boolean;
 
+    @Property({ nullable: true })
+    isTransferToCoreVault?: boolean;
+
     @Property({ nullable: true, length: 32 })
     finalState?: AgentRedemptionFinalState;
 
