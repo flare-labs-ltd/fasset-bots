@@ -919,8 +919,7 @@ export class AgentBotCommands {
         // cap with free agent vault lots
         const lotSize = await this.infoBot().getLotSizeBN();
         const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
-        const decimals = await this.context.fAsset.decimals();
-        const freeUba = toBN(agentInfo.freeCollateralLots).mul(lotSize).mul(toBN(10).shln(Number(decimals)));
+        const freeUba = toBN(agentInfo.freeCollateralLots).mul(lotSize)
         return freeUba.lt(maxCvRetUba) ? freeUba : maxCvRetUba;
     }
 }

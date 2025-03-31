@@ -572,7 +572,7 @@ program
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         const amount = await cli.maxReturnFromCoreVaultUBA(agentVault)
-        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        const currency = await Currencies.fasset(cli.context);
         console.log(`Max amount for the agent vault ${agentVault} to transfer from core vault is ${currency.format(amount)}`)
     })
 
