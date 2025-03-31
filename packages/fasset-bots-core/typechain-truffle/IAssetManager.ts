@@ -315,12 +315,14 @@ export interface CoreVaultRedemptionRequested {
   args: {
     redeemer: string;
     paymentAddress: string;
+    paymentReference: string;
     valueUBA: BN;
     feeUBA: BN;
     0: string;
     1: string;
-    2: BN;
+    2: string;
     3: BN;
+    4: BN;
   };
 }
 
@@ -816,8 +818,8 @@ export interface TransferFeesClaimed {
   };
 }
 
-export interface TransferToCoreVaultCancelled {
-  name: "TransferToCoreVaultCancelled";
+export interface TransferToCoreVaultDefaulted {
+  name: "TransferToCoreVaultDefaulted";
   args: {
     agentVault: string;
     transferRedemptionRequestId: BN;
@@ -992,7 +994,7 @@ export type AllEvents =
   | SettingChanged
   | TransferFeeChangeScheduled
   | TransferFeesClaimed
-  | TransferToCoreVaultCancelled
+  | TransferToCoreVaultDefaulted
   | TransferToCoreVaultStarted
   | TransferToCoreVaultSuccessful
   | UnderlyingBalanceChanged
@@ -1303,24 +1305,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
   };
 
   cancelReturnFromCoreVault: {
-    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  cancelTransferToCoreVault: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -2896,6 +2880,10 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  getCoreVaultTransferTimeExtensionSeconds(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   getSettings(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
@@ -4074,6 +4062,25 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setCoreVaultTransferTimeExtensionSeconds: {
+    (
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _transferTimeExtensionSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setRedemptionPaymentExtensionSeconds: {
     (
       _value: number | BN | string,
@@ -4781,24 +4788,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     };
 
     cancelReturnFromCoreVault: {
-      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _agentVault: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _agentVault: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _agentVault: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    cancelTransferToCoreVault: {
       (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -6380,6 +6369,10 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    getCoreVaultTransferTimeExtensionSeconds(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     getSettings(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
@@ -7554,6 +7547,25 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _transferFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCoreVaultTransferTimeExtensionSeconds: {
+      (
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _transferTimeExtensionSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _transferTimeExtensionSeconds: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
