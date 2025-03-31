@@ -920,7 +920,7 @@ export class AgentBotCommands {
         const lotSize = await this.infoBot().getLotSizeBN();
         const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
         const decimals = await this.context.fAsset.decimals();
-        const freeUba = agentInfo.freeCollateralLots.mul(lotSize).mul(toBN(10).shln(Number(decimals)));
+        const freeUba = toBN(agentInfo.freeCollateralLots).mul(lotSize).mul(toBN(10).shln(Number(decimals)));
         return freeUba.lt(maxCvRetUba) ? freeUba : maxCvRetUba;
     }
 }
