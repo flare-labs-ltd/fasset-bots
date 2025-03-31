@@ -3,7 +3,7 @@ import "dotenv/config";
 import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import chalk from "chalk";
-import { ChainId, InfoBotCommands } from "..";
+import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig, getHandshakeAddressVerifier } from "../config/BotConfig";
@@ -12,8 +12,8 @@ import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/confi
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { Secrets } from "../config/secrets";
-import { AgentEntity, AgentRedemption, TransferToCoreVault } from "../entities/agent";
-import { AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, TransferToCoreVaultState } from "../entities/common";
+import { AgentEntity } from "../entities/agent";
+import { AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -32,7 +32,6 @@ import { TransactionStatus, WalletAddressEntity } from "@flarelabs/simple-wallet
 import { requiredEventArgs } from "../utils/events/truffle";
 import { EventArgs } from "../utils/events/common";
 import { ReturnFromCoreVaultRequested, TransferToCoreVaultStarted } from "../../typechain-truffle/IIAssetManager";
-import { XRPBlockchainAPI } from "../../../simple-wallet/src/blockchain-apis/XRPBlockchainAPI";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");

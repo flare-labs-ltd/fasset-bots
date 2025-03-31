@@ -39,7 +39,6 @@ import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 import { AgentBotHandshake } from "./AgentBotHandshake";
 import { HandshakeAddressVerifier } from "./plugins/HandshakeAddressVerifier";
-import { AgentBotTransferToCoreVault } from "./AgentBotTransferToCoreVault";
 import { AgentBotReturnFromCoreVault } from "./AgentBotReturnFromCoreVault";
 
 const PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS = 2 * MINUTES * 1000;
@@ -120,7 +119,6 @@ export class AgentBot {
     collateralWithdrawal = new AgentBotCollateralWithdrawal(this);
     claims = new AgentBotClaims(this);
     closing = new AgentBotClosing(this);
-    transferToCoreVault = new AgentBotTransferToCoreVault(this, this.agent, this.notifier);
     returnFromCoreVault = new AgentBotReturnFromCoreVault(this, this.agent, this.notifier);
 
     // only set when created by an AgentBotRunner
@@ -500,11 +498,7 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "AgentPing")) {
             await this.handleAgentPing(event.args);
         } // core vault events
-            else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultStarted")) {
-            await this.transferToCoreVault.transferToCoreVaultStarted(em, event.args);
-        } else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultSuccessful")) {
-            await this.transferToCoreVault.transferToCoreVaultPerformed(em, event.args);
-        } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultRequested")) {
+          else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultRequested")) {
             await this.returnFromCoreVault.returnFromCoreVaultStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultCancelled")) {
             await this.returnFromCoreVault.returnFromCoreVaultCancelled(em, event.args);
