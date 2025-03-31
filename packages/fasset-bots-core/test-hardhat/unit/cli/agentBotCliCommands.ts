@@ -7,7 +7,7 @@ import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, ReturnFromCoreVault, TransferToCoreVault } from "../../../src/entities/agent";
+import { AgentEntity, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, ReturnFromCoreVault } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { CommandLineError, Currencies } from "../../../src/utils";
@@ -20,7 +20,7 @@ import { TestAssetBotContext, createTestAssetContext, ftsoUsdcInitialPrice, ftso
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
-import { AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, ReturnFromCoreVaultState, TransferToCoreVaultState } from "../../../src/entities/common";
+import { AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, ReturnFromCoreVaultState } from "../../../src/entities/common";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { Secrets } from "../../../src/config/secrets";
 import { TEST_SECRETS } from "../../../test/test-utils/test-bot-config";

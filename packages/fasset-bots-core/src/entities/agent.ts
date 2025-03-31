@@ -447,32 +447,6 @@ export class RejectedRedemptionRequest {
 }
 
 @Entity()
-@Unique({ properties: ["agentAddress", "requestId"] })
-export class TransferToCoreVault {
-    @PrimaryKey({ autoincrement: true })
-    id!: number;
-
-    @Property()
-    state!: TransferToCoreVaultState;
-
-    @Property({ length: ADDRESS_LENGTH })
-    agentAddress!: string;
-
-    @Property({ type: BNType })
-    requestId!: BN;
-
-    @Property({ type: BNType })
-    valueUBA!: BN;
-
-    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
-    createdAt: Date = new Date();
-
-    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
-    updatedAt: Date = new Date();
-}
-
-
-@Entity()
 export class ReturnFromCoreVault {
     @PrimaryKey({ autoincrement: true })
     id!: number;
