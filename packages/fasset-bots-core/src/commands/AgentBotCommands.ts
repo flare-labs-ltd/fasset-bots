@@ -897,4 +897,30 @@ export class AgentBotCommands {
         await this.context.assetManager.cancelReturnFromCoreVault(agentVault, { from: agentBot.agent.owner.workAddress });
         logger.info(`Agent ${agentVault} successfully cancelled return of underlying from core vault.`);
     }
+
+    /**
+     *
+     * @param agentVault agent's vault address
+     * @returns maximum amount of underlying token that can be requested from core vault by the given agent
+     */
+    async maxReturnFromCoreVaultUBA(agentVault: string): Promise<BN> {
+        if (this.context.coreVaultManager == null) {
+            throw Error('Core vault Manager contract was not registered')
+        }
+        // core vault manager
+        const availableFunds = await this.context.coreVaultManager.availableFunds();
+        const escrowedFunds = await this.context.coreVaultManager.escrowedFunds();
+        const totalRequestAmountWithFee = await this.context.coreVaultManager.totalRequestAmountWithFee();
+        const { 3: fee } = await this.context.coreVaultManager.getSettings();
+        const allFunds = availableFunds.add(escrowedFunds);
+        const requestedAmount = totalRequestAmountWithFee.add(fee);
+        const maxCvRetUba = allFunds.gt(requestedAmount) ? allFunds.sub(requestedAmount) : BN_ZERO;
+        if (maxCvRetUba.eqn(0)) return BN_ZERO;
+        // cap with free agent vault lots
+        const lotSize = await this.infoBot().getLotSizeBN();
+        const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
+        const decimals = await this.context.fAsset.decimals();
+        const freeUba = agentInfo.freeCollateralLots.mul(lotSize).mul(toBN(10).shln(Number(decimals)));
+        return freeUba.lt(maxCvRetUba) ? freeUba : maxCvRetUba;
+    }
 }

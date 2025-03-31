@@ -562,6 +562,20 @@ program
         await cli.cancelReturnFromCoreVault(agentVault);
     });
 
+program
+    .command("maxReturnFromCoreVault")
+    .description("maximum amount for an agent to withdraw from core vault")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        validateAddress(agentVault, "Agent vault address")
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const amount = await cli.maxReturnFromCoreVaultUBA(agentVault)
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        console.log(`Max amount for the agent vault ${agentVault} to transfer from core vault is ${currency.format(amount)}`)
+    })
+
 toplevelRun(async () => {
     try {
         await program.parseAsync();
