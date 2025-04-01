@@ -20,10 +20,12 @@ import { TestAssetBotContext, createTestAssetContext } from "../test-utils/creat
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { assertWeb3DeepEqual, createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualFDCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 import { Challenger } from "../../src/actors/Challenger";
+import { requiredEventArgs } from "../../src/utils/events/truffle";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
+const coreVaultUnderlyingAddress = "CORE_VAULT_UNDERLYING";
 
 describe("Challenger tests", () => {
     let accounts: string[];
@@ -50,7 +52,7 @@ describe("Challenger tests", () => {
 
     async function initialize() {
         orm = await createTestOrm();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp,  { coreVaultUnderlyingAddress });
         state = new TrackedState(context);
         await state.initialize();
         chain = context.blockchainIndexer.chain;
@@ -671,7 +673,7 @@ describe("Challenger tests", () => {
         expect(fBalanceAfter.lt(fBalanceBefore)).to.be.true;
     });
 
-    it("should do 3rd party confirmation for redemption payment", async () => {
+    it("Should do 3rd party confirmation for redemption payment", async () => {
         const challenger = await createTestChallenger(context, challengerAddress, state);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -684,7 +686,7 @@ describe("Challenger tests", () => {
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         const [reqs] = await redeemer.requestRedemption(2);
         await performRedemptionPayment(agentBot.agent, reqs[0]);
-        // now the agent shoud be in redeeming state
+        // now the agent should be in redeeming state
         const info1 = await agentBot.agent.getAgentInfo();
         expect(toBN(info1.redeemingUBA).gtn(0)).to.be.true;
         // skip half an hour
@@ -719,7 +721,7 @@ describe("Challenger tests", () => {
         expect(Number(info3.status)).to.be.eq(AgentStatus.NORMAL);
     });
 
-    it("should do 3rd party confirmation for underlying withdrawal", async () => {
+    it("Should do 3rd party confirmation for underlying withdrawal", async () => {
         const withdrawalAmount = 100e6;
         const challenger = await createTestChallenger(context, challengerAddress, state);
         // create test actors
@@ -773,5 +775,50 @@ describe("Challenger tests", () => {
         expect(Number(await context.stablecoins.usdc.balanceOf(challenger.address))).to.be.gt(1e6);
         // but the agent is is still healthy
         expect(Number(info3.status)).to.be.eq(AgentStatus.NORMAL);
+    });
+
+    it("Should do 3rd party default for transfer to core vault", async () => {
+        const challenger = await createTestChallenger(context, challengerAddress, state);
+        // create test actors
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const agentVault = agentBot.agent.vaultAddress;
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await runChallengerStep(challenger);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
+        // start transfer to core vault
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        const allowed = await context.assetManager.maximumTransferToCoreVault(agentVault);
+        const toTransfer = allowed[0];
+        const transferFee = await context.assetManager.transferToCoreVaultFee(toTransfer);
+        const res = await context.assetManager.transferToCoreVault(agentVault, toTransfer,  { from: agentBot.agent.owner.workAddress, value: transferFee });
+        const event = requiredEventArgs(res, "TransferToCoreVaultStarted");
+        const paymentReference = PaymentReference.redemption(event.transferRedemptionRequestId);
+        // now the agent should be in redeeming state
+        const info1 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info1.redeemingUBA).gtn(0)).to.be.true;
+        await runChallengerStep(challenger);
+        // skip time
+        const redemption = challenger.activeRedemptions.get(paymentReference);
+        assert(redemption, "Redemption should not be null");
+        const blockHeight = chain.blockHeight();
+        await chain.mine(blockHeight + redemption.endBlock.toNumber())
+        await chain.skipTimeTo(redemption.endTimestamp.toNumber())
+        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
+        // 3rd party confirmation
+        for (let i = 0; i < 5; i++) {
+            await time.increase(10);
+            await time.advanceBlock();
+            chain.mine();
+            await runChallengerStep(challenger);
+        }
+        // redeeming is closed now
+        const info2 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info2.redeemingUBA).eqn(0)).to.be.true;
+        expect(toBN(info2.mintedUBA).gtn(0)).to.be.true;
+        // an challenger got some reward
+        expect(Number(await context.stablecoins.usdc.balanceOf(challenger.address))).to.be.gt(1e6);
+        // but the agent is is still healthy
+        expect(Number(info2.status)).to.be.eq(AgentStatus.NORMAL);
     });
 });
