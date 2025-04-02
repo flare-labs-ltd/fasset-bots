@@ -8,7 +8,7 @@ import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { squashSpace } from "../utils/formatting";
-import { assertNotNull, BN_ZERO, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
+import { assertNotNull, BN_ZERO, errorIncluded, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -237,8 +237,17 @@ export class AgentBotUnderlyingManagement {
                         not supported for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`);
             }
         } catch (error) {
-            console.error(`Error handling next underlying payment step for underlying payment ${id} agent ${this.agent.vaultAddress}: ${error}`);
+            if (errorIncluded(error, ["no active announcement"])) {
+                const underlyingPayment = await rootEm.findOneOrFail(AgentUnderlyingPayment, {id }, { refresh: true });
+                await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                    state: AgentUnderlyingPaymentState.DONE,
+                });
+                logger.warn(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because it was already confirmed`);
+                console.log(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because it was already confirmed`);
+            } else {
+                console.error(`Error handling next underlying payment step for underlying payment ${id} agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling next underlying payment step for underlying payment ${id}:`, error);
+            }
         }
     }
 
