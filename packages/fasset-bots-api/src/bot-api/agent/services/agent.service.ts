@@ -353,7 +353,13 @@ export class AgentService {
         }
         agentVaultInfo.vaultCollateralToken = collateralToken.tokenFtsoSymbol;
         agentVaultInfo.poolSuffix = tokenSymbol;
-        agentVaultInfo.redemptionPoolFeeShareBIPS = await cli.context.assetManager.getAgentSetting(agentVaultAddress, "redemptionPoolFeeShareBIPS");
+        let redFeeBIPS = "0"
+        try{
+            redFeeBIPS = toBN(await cli.context.assetManager.getAgentSetting(agentVaultAddress, "redemptionPoolFeeShareBIPS")).toString();
+        } catch(e) {
+            redFeeBIPS = "0"
+        }
+        agentVaultInfo.redemptionPoolFeeShareBIPS = redFeeBIPS;
         const del = await cli.context.wNat.delegatesOf(info.collateralPool);
         const delegates: Delegation [] = [];
         let delegationPercentage = 0;
