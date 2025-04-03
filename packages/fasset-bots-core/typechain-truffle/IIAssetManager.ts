@@ -2124,6 +2124,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  coreVaultAvailableAmount(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
   createAgentVault: {
     (
       _addressProof: {
@@ -6974,6 +6978,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    coreVaultAvailableAmount(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
 
     createAgentVault: {
       (

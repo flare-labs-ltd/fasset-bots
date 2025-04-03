@@ -14,6 +14,16 @@ export interface CoreVaultSettingsFacetContract
   ): Promise<CoreVaultSettingsFacetInstance>;
 }
 
+export interface ContractChanged {
+  name: "ContractChanged";
+  args: {
+    name: string;
+    value: string;
+    0: string;
+    1: string;
+  };
+}
+
 export interface GovernanceCallTimelocked {
   name: "GovernanceCallTimelocked";
   args: {
@@ -42,6 +52,16 @@ export interface GovernedProductionModeEntered {
   };
 }
 
+export interface SettingChanged {
+  name: "SettingChanged";
+  args: {
+    name: string;
+    value: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface TimelockedGovernanceCallCanceled {
   name: "TimelockedGovernanceCallCanceled";
   args: {
@@ -59,9 +79,11 @@ export interface TimelockedGovernanceCallExecuted {
 }
 
 export type AllEvents =
+  | ContractChanged
   | GovernanceCallTimelocked
   | GovernanceInitialised
   | GovernedProductionModeEntered
+  | SettingChanged
   | TimelockedGovernanceCallCanceled
   | TimelockedGovernanceCallExecuted;
 

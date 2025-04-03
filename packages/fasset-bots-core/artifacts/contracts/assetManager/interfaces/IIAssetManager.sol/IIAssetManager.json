@@ -3344,6 +3344,24 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "coreVaultAvailableAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_immediatelyAvailableUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalAvailableUBA",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "components": [

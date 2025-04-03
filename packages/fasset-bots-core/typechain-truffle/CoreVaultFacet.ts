@@ -353,6 +353,10 @@ export interface CoreVaultFacetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  coreVaultAvailableAmount(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
   maximumTransferToCoreVault(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -585,6 +589,10 @@ export interface CoreVaultFacetInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    coreVaultAvailableAmount(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
 
     maximumTransferToCoreVault(
       _agentVault: string,
