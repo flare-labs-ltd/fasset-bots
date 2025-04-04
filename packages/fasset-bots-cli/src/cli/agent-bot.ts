@@ -563,7 +563,7 @@ program
     });
 
 program
-    .command("maxReturnFromCoreVault")
+    .command("maximumReturnFromCoreVault")
     .description("maximum amount for an agent to withdraw from core vault")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {

@@ -291,6 +291,12 @@ export class InfoBotCommands {
         return toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
     }
 
+    async getFreeCollateralUBA(agent: string) {
+        const lotSize = await this.getLotSizeBN();
+        const agentInfo = await this.context.assetManager.getAgentInfo(agent);
+        return toBN(agentInfo.freeCollateralLots).mul(lotSize);
+    }
+
     /**
      * Get agent info (raw output of getAgentInfo contract method)
      * @param agentVault agent's vault address

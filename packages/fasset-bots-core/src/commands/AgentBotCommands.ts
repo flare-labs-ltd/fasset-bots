@@ -906,19 +906,9 @@ export class AgentBotCommands {
         if (this.context.coreVaultManager == null) {
             throw Error('Core vault Manager contract was not registered')
         }
-        // core vault manager
-        const availableFunds = await this.context.coreVaultManager.availableFunds();
-        const escrowedFunds = await this.context.coreVaultManager.escrowedFunds();
-        const totalRequestAmountWithFee = await this.context.coreVaultManager.totalRequestAmountWithFee();
-        const { 3: fee } = await this.context.coreVaultManager.getSettings();
-        const allFunds = availableFunds.add(escrowedFunds);
-        const requestedAmount = totalRequestAmountWithFee.add(fee);
-        const maxCvRetUba = allFunds.gt(requestedAmount) ? allFunds.sub(requestedAmount) : BN_ZERO;
+        const { 1: maxCvRetUba } = await this.context.assetManager.coreVaultAvailableAmount()
         if (maxCvRetUba.eqn(0)) return BN_ZERO;
-        // cap with free agent vault lots
-        const lotSize = await this.infoBot().getLotSizeBN();
-        const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
-        const freeUba = toBN(agentInfo.freeCollateralLots).mul(lotSize)
-        return freeUba.lt(maxCvRetUba) ? freeUba : maxCvRetUba;
+        const freeCollateralUba = await this.infoBot().getFreeCollateralUBA(agentVault)
+        return freeCollateralUba.lt(maxCvRetUba) ? freeCollateralUba : maxCvRetUba;
     }
 }
