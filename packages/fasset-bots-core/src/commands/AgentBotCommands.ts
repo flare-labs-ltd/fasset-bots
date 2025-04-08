@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { decodeAttestationName, Payment } from "@flarenetwork/state-connector-protocol";
+import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import chalk from "chalk";
 import { InfoBotCommands } from "..";
@@ -18,7 +18,7 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace, web3DeepNormalize } from "../utils";
+import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, MAX_BIPS, errorIncluded, isEnumValue, maxBN, requireNotNull, toBN } from "../utils/helpers";
@@ -30,10 +30,10 @@ import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
 import { TransactionStatus, WalletAddressEntity } from "@flarelabs/simple-wallet";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { PaymentReference } from "../fasset/PaymentReference";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
+const IAgentVault = artifacts.require("IAgentVault");
 
 type CleanupRegistration = (handler: () => Promise<void>) => void;
 
@@ -398,6 +398,20 @@ export class AgentBotCommands {
         await this.notifierFor(agentVault).sendBalancePoolFees(balanceF);
         logger.info(`Agent ${agentVault} has pool fee balance ${balanceF}.`);
         return balance.toString();
+    }
+
+    /**
+     * Withdraw any ERC20 tokens in the vault (except the collateral tokens, which requires announcement).
+     * @param tokenAddress address of any ERC20 token (with metadata)
+     * @param agentVault agent vault address
+     * @param amountStr amount in whole tokens (as decimal string)
+     */
+    async withdrawTokensFromVault(tokenAddress: string, agentVault: string, amountStr: string) {
+        const agentVaultInstance = await IAgentVault.at(agentVault);
+        const token = await IERC20.at(tokenAddress);
+        const currency = await Currencies.erc20(token);
+        const amount = currency.parse(amountStr);
+        await agentVaultInstance.withdrawCollateral(token.address, amount, this.owner.workAddress, { from: this.owner.workAddress });
     }
 
     /**
