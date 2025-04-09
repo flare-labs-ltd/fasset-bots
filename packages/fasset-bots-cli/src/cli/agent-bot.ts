@@ -308,6 +308,21 @@ program
     });
 
 program
+    .command("withdrawTokensFromVault")
+    .description("withdraw any ERC20 tokens in the vault (except the collateral tokens, which requires announcement)")
+    .argument("<token>", "name or address of any ERC20 token")
+    .argument("<agentVaultAddress>")
+    .argument("<amount>")
+    .action(async (token: string, agentVault: string, amount: string) => {
+        validateDecimal(amount, "amount", { strictMin: 0 });
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        token = getContractByName(options.config, token);
+        await cli.withdrawTokensFromVault(token, agentVault, amount);
+    });
+
+program
     .command("cancelUnderlyingWithdrawal")
     .description("cancel underlying withdrawal announcement")
     .argument("<agentVaultAddress>")

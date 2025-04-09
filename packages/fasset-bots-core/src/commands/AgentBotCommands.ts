@@ -35,6 +35,7 @@ import { ReturnFromCoreVaultRequested, TransferToCoreVaultStarted } from "../../
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
+const IAgentVault = artifacts.require("IAgentVault");
 
 type CleanupRegistration = (handler: () => Promise<void>) => void;
 
@@ -404,6 +405,20 @@ export class AgentBotCommands {
         await this.notifierFor(agentVault).sendBalancePoolFees(balanceF);
         logger.info(`Agent ${agentVault} has pool fee balance ${balanceF}.`);
         return balance.toString();
+    }
+
+    /**
+     * Withdraw any ERC20 tokens in the vault (except the collateral tokens, which requires announcement).
+     * @param tokenAddress address of any ERC20 token (with metadata)
+     * @param agentVault agent vault address
+     * @param amountStr amount in whole tokens (as decimal string)
+     */
+    async withdrawTokensFromVault(tokenAddress: string, agentVault: string, amountStr: string) {
+        const agentVaultInstance = await IAgentVault.at(agentVault);
+        const token = await IERC20.at(tokenAddress);
+        const currency = await Currencies.erc20(token);
+        const amount = currency.parse(amountStr);
+        await agentVaultInstance.withdrawCollateral(token.address, amount, this.owner.workAddress, { from: this.owner.workAddress });
     }
 
     /**
