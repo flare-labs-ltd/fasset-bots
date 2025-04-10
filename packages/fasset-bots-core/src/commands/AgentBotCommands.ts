@@ -876,6 +876,7 @@ export class AgentBotCommands {
         const res = await this.context.assetManager.transferToCoreVault(agentVault, amount,  { from: agentBot.agent.owner.workAddress, value: fee });
         const event = requiredEventArgs(res, "TransferToCoreVaultStarted");
         logger.info(`Agent ${agentVault} successfully initiated transfer of underlying to core vault.`);
+        await this.notifierFor(agentVault).sendTransferToCVStarted(event.transferRedemptionRequestId);
         return event;
     }
 
