@@ -108,14 +108,6 @@ export class AgentBotUnderlyingManagement {
     async startSelfMinting(em: EM, lots: BN): Promise<boolean> {
         const amount = await this.agent.getSelfMintPaymentAmount(lots);
         const amountF = await this.tokens.underlying.format(amount);
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to pay for self-minting to underlying address ${this.agent.underlyingAddress}
-            from owner's underlying address ${this.ownerUnderlyingAddress}.`);
-        const hasEnoughBalance = await this.checkForLowOwnerUnderlyingBalance();
-        if (!hasEnoughBalance) {
-            logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
-            console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
-            return false;
-        }
         // check and log the fee
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
             source: this.ownerUnderlyingAddress,
@@ -124,6 +116,14 @@ export class AgentBotUnderlyingManagement {
             isPayment: true
         }));
         logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to pay for self-minting ${amount.toString()} to underlying address ${this.agent.underlyingAddress}
+            from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+        const hasEnoughBalance = await this.checkFOwnerUnderlyingBalance(amount.add(estimatedFee));
+        if (!hasEnoughBalance) {
+            logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            return false;
+        }
         // start payment
         const txDbId = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
             return await this.agent.initiateSelfMintPayment(amount, this.ownerUnderlyingAddress);
@@ -148,6 +148,21 @@ export class AgentBotUnderlyingManagement {
         } else {
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${balanceF}
                 on underlying address ${this.ownerUnderlyingAddress}.`);
+            return true;
+        }
+    }
+
+    async checkFOwnerUnderlyingBalance(neededAmount: BN): Promise<boolean> {
+        const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
+        const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
+        const expectedBalanceF = await this.tokens.underlying.format(neededAmount);
+        if (ownerUnderlyingBalance.lte(neededAmount)) {
+            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
+                ${balanceF} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalanceF}.`);
+            return false;
+        } else {
+            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${balanceF}
+                on underlying address ${this.ownerUnderlyingAddress}. Needed ${expectedBalanceF}.`);
             return true;
         }
     }
@@ -244,6 +259,13 @@ export class AgentBotUnderlyingManagement {
                 });
                 logger.warn(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because it was already confirmed`);
                 console.log(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because it was already confirmed`);
+            } else if (errorIncluded(error, ["payment failed"])) {
+                const underlyingPayment = await rootEm.findOneOrFail(AgentUnderlyingPayment, {id }, { refresh: true });
+                await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                    state: AgentUnderlyingPaymentState.DONE,
+                });
+                logger.warn(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because payment failed`);
+                console.log(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because payment failed`);
             } else {
                 console.error(`Error handling next underlying payment step for underlying payment ${id} agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling next underlying payment step for underlying payment ${id}:`, error);
