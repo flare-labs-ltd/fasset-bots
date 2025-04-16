@@ -118,7 +118,7 @@ export class AgentBotUnderlyingManagement {
         logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to pay for self-minting ${amount.toString()} to underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
-        const hasEnoughBalance = await this.checkFOwnerUnderlyingBalance(amount.add(estimatedFee));
+        const hasEnoughBalance = await this.checkOwnerUnderlyingBalance(amount.add(estimatedFee));
         if (!hasEnoughBalance) {
             logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
             console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
@@ -152,7 +152,7 @@ export class AgentBotUnderlyingManagement {
         }
     }
 
-    async checkFOwnerUnderlyingBalance(neededAmount: BN): Promise<boolean> {
+    async checkOwnerUnderlyingBalance(neededAmount: BN): Promise<boolean> {
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
         const expectedBalanceF = await this.tokens.underlying.format(neededAmount);
