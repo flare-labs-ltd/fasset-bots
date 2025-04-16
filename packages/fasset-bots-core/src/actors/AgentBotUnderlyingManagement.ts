@@ -244,6 +244,13 @@ export class AgentBotUnderlyingManagement {
                 });
                 logger.warn(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because it was already confirmed`);
                 console.log(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because it was already confirmed`);
+            } else if (errorIncluded(error, ["payment failed"])) {
+                const underlyingPayment = await rootEm.findOneOrFail(AgentUnderlyingPayment, {id }, { refresh: true });
+                await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                    state: AgentUnderlyingPaymentState.DONE,
+                });
+                logger.warn(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because payment failed`);
+                console.log(`Agent ${this.agent.vaultAddress} closed underlying payment ${id} because payment failed`);
             } else {
                 console.error(`Error handling next underlying payment step for underlying payment ${id} agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling next underlying payment step for underlying payment ${id}:`, error);
