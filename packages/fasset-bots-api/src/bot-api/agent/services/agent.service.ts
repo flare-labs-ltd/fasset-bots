@@ -911,23 +911,6 @@ export class AgentService {
         return {requestableLotsCV: requestableLots.toNumber(), requestableLotsVault: Number(info.freeCollateralLots), lotSize: lotSizeAsset};
     }
 
-    async getVaultRedeemableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<RedeemableVaultCVData> {
-        if(!fAssetSymbol.includes("XRP")) {
-            return {redeemableLotsOwner: 0, requestableLotsCV: 0, minimumLotsToRedeem: 0, lotSize: 0};
-        }
-        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
-        const settings = await cli.context.assetManager.getSettings();
-        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
-        const lotSizeAsset = lotSize.toNumber() / 10 ** Number(settings.assetDecimals);
-        const ownerAddress = this.secrets.optional(`owner.native.address`);
-        let ownerLots = toBN(0);
-        if (ownerAddress) {
-            const fassetBalance = await cli.context.fAsset.balanceOf(ownerAddress);
-            ownerLots = fassetBalance.div(lotSize);
-        }
-        return {redeemableLotsOwner: ownerLots.toNumber(), requestableLotsCV: 123, minimumLotsToRedeem: 10, lotSize: lotSizeAsset};
-    }
-
     async getVaultDepositableCVData(fAssetSymbol: string, agentVaultAddress: string): Promise<DepositableVaultCVData> {
         if(!fAssetSymbol.includes("XRP")) {
             return {underlyingBalance: "0", transferableBalance: "0"};
@@ -940,8 +923,6 @@ export class AgentService {
         const maxTransfer = formatFixed(toBN(depositableUBA[0]), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
         return {underlyingBalance: underlyingBalance, transferableBalance: maxTransfer};
     }
-
-    //minimumRemainingAfterTransferForCollateralAMG(minBIPS: BN, )
 
     async requestCVDeposit(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
         if(!fAssetSymbol.includes("XRP")) {
@@ -976,10 +957,6 @@ export class AgentService {
         const feeCvUsd = toBN(feeWei).mul(priceUSD).div(toBNExp(1, 18 + Number(cflrPrice.decimals)));
         const fee = formatFixed(feeWei, 18, { decimals: 3, groupDigits: true, groupSeparator: "," })
         return {fee: fee, symbol: cli.context.nativeChainInfo.tokenSymbol, feeUSD: formatFixed(feeCvUsd, 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
-    }
-
-    async redeemFromCV(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
-        return;
     }
 
     async updateRedemptionQueue(): Promise<void> {

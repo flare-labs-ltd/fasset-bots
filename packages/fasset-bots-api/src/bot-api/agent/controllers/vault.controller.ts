@@ -234,27 +234,6 @@ export class AgentVaultController {
 
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
-    @Get("getRedeemableCVData/:fAssetSymbol/:agentVaultAddress")
-    public async getRedeemableCVData(
-        @Param("fAssetSymbol") fAssetSymbol: string,
-        @Param("agentVaultAddress") agentVaultAddress: string
-    ): Promise<ApiResponseWrapper<RedeemableVaultCVData>> {
-        return handleApiResponse(this.agentService.getVaultRedeemableCVData(fAssetSymbol, agentVaultAddress));
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
-    @Get("redeemFromCV/:fAssetSymbol/:agentVaultAddress/:lots")
-    public async redeemFromCV(
-        @Param("fAssetSymbol") fAssetSymbol: string,
-        @Param("agentVaultAddress") agentVaultAddress: string,
-        @Param("lots") lots: string
-    ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.redeemFromCV(fAssetSymbol, agentVaultAddress,lots));
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
     @Post("cancelCVWithdrawal/:fAssetSymbol/:agentVaultAddress")
     @HttpCode(200)
     public async cancelWithdrawalFromCoreVault(
