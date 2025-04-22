@@ -129,10 +129,8 @@ export interface VaultInfo {
     delegates: Delegation[];
     delegationPercentage: string;
     allLots: string;
-    transferableToCV: string;
     underlyingSymbol: string;
     redeemCapacity: string;
-    transferableFromCV: string;
 }
 
 export interface AllVaults {

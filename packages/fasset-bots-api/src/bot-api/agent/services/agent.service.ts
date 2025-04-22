@@ -704,9 +704,7 @@ export class AgentService {
                     delegates: delegates,
                     delegationPercentage: delegationPercentage.toString(),
                     allLots: (Number(info.freeCollateralLots) + mintedLots.toNumber()).toString(),
-                    transferableToCV: "10,200.24",
                     underlyingSymbol: cli.context.chainInfo.symbol,
-                    transferableFromCV: "10,200.24",
                     redeemCapacity: (toBN(info.mintedUBA).div(lotSize)).toString()
                 };
                 allVaults.push(vaultInfo);
