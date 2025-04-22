@@ -401,7 +401,7 @@ export class AgentBotMinting {
                 const agentInfo = await this.bot.agent.getAgentInfo();
                 const freeCollateralLots = toBN(agentInfo.freeCollateralLots);
                 if (freeCollateralLots.gte(lots)) throw error; // not size issue or cannot fix
-                await this.notifier.sendSelfMintPaymentTooSmall(String(lots), String(freeCollateralLots));
+                await this.notifier.sendSelfMintCollateralTooLow(String(lots), String(freeCollateralLots));
                 await this.executeSelfMinting(proof, freeCollateralLots);
             } else {
                 throw error;
