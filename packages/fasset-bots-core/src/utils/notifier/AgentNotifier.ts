@@ -577,7 +577,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     async sendSelfMintCollateralTooLow(lots: string, freeCollateralLots: string) {
         await this.info(AgentNotificationKey.SELF_MINT_COLLATERAL_TOO_LOW,
             squashSpace`Collateral too low to execute self minting.
-                Reduced mintng from the requested lots ${lots} to free collateral lots ${freeCollateralLots}.
+                Reduced minting from the requested lots ${lots} to free collateral lots ${freeCollateralLots}.
                 The remainder of the deposit will become free underlying for agent vault ${this.address}.`);
     }
 
