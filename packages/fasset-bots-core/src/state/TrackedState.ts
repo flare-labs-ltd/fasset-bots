@@ -260,6 +260,9 @@ export class TrackedState {
         } else if (eventIs(event, this.context.assetManager, "ReturnFromCoreVaultConfirmed")) {
             logger.info(`Tracked State received event 'ReturnFromCoreVaultConfirmed' with data ${formatArgs(event.args)}.`);
             (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleReturnFromCoreVaultConfirmed(event.args);
+        } else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultDefaulted")) {
+            logger.info(`Tracked State received event 'TransferToCoreVaultDefaulted' with data ${formatArgs(event.args)}.`);
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleTransferToCoreVaultDefaulted(event.args);
         }
         for (const collateral of this.collaterals.list) {
             const contract = await tokenContract(collateral.token);

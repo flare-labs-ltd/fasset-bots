@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { AgentAvailable, AgentCollateralTypeChanged, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
-import { AgentVaultCreated, CollateralReservationDeleted, RedeemedInCollateral, ReturnFromCoreVaultConfirmed, ReturnFromCoreVaultRequested, SelfMint } from "../../typechain-truffle/IIAssetManager";
+import { AgentVaultCreated, CollateralReservationDeleted, RedeemedInCollateral, ReturnFromCoreVaultConfirmed, ReturnFromCoreVaultRequested, SelfMint, TransferToCoreVaultDefaulted } from "../../typechain-truffle/IIAssetManager";
 import { AgentInfo, AgentStatus, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { roundUBAToAmg } from "../fasset/Conversions";
 import { EventArgs } from "../utils/events/common";
@@ -183,6 +183,13 @@ export class TrackedAgentState {
     handleCollateralReservationDeleted(args: EventArgs<CollateralReservationDeleted>) {
         this.reservedUBA = this.reservedUBA.sub(toBN(args.reservedAmountUBA));
         logger.info(`Tracked State Agent handled collateral reservation deleted: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
+    }
+
+    // handlers: transfer to core vault
+    handleTransferToCoreVaultDefaulted(args: EventArgs<TransferToCoreVaultDefaulted>): void {
+        // the transferred amount has been re-minted
+        this.mintedUBA = this.mintedUBA.add(toBN(args.remintedUBA));
+        logger.info(`Tracked State Agent handled transfer to core vault default: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // handlers: return from core vault
