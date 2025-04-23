@@ -367,7 +367,9 @@ export class AgentBotRedemption {
         const redemptionPoolFeeShareBIPS = toBN(await this.agent.getAgentSetting("redemptionPoolFeeShareBIPS"));
         const poolFeeUBA = redemptionFee.mul(redemptionPoolFeeShareBIPS).divn(MAX_BIPS);
         let maxRedemptionFee = redemptionFee.sub(poolFeeUBA);
-        if (maxRedemptionFee.eq(BN_ZERO)) { // special redemption ticket - `transferToCoreVault`
+
+        // special redemption ticket - `transferToCoreVault`
+        if (maxRedemptionFee.eq(BN_ZERO)) {
             const coreVaultSourceAddress = await requireNotNull(this.context.coreVaultManager).coreVaultAddress();
             if (redemption.paymentAddress === coreVaultSourceAddress) { // additional check
                 const currentFee = await this.context.wallet.getTransactionFee({source: this.agent.underlyingAddress, destination: redemption.paymentAddress, isPayment: true, amount: redemption.valueUBA});

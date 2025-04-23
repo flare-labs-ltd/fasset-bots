@@ -106,7 +106,7 @@ export enum AgentNotificationKey {
     AGENT_FAILED_FUNDING_SERVICE_ACCOUNT = "AGENT FAILED FUNDING SERVICE ACCOUNT",
     // core vault
     TRANSFER_TO_CV_STARTED = "TRANSFER TO CORE VAULT STARTED",
-    TRANSFER_TO_CV_CANCELLED = "TRANSFER TO CORE VAULT CANCELLED",
+    TRANSFER_TO_CV_DEFAULTED = "TRANSFER TO CORE VAULT DEFAULTED",
     TRANSFER_TO_CV_PERFORMED = "TRANSFER TO CORE VAULT PERFORMED",
     TRANSFER_TO_CV_REDEMPTION = "CORE VAULT REDEMPTION",
     RETURN_FROM_CV_STARTED = "RETURN FROM CORE VAULT STARTED",
@@ -622,10 +622,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.TRANSFER_TO_CV_STARTED, `Transfer to core vault ${requestId} started for ${this.address}.`);
     }
 
-    async sendTransferToCVCancelled(requestId: BNish) {
+    async sendTransferToCVDefaulted(requestId: BNish) {
         await this.info(
-            AgentNotificationKey.TRANSFER_TO_CV_CANCELLED,
-            `Transfer to core vault ${requestId} was cancelled for agent ${this.address}.`
+            AgentNotificationKey.TRANSFER_TO_CV_DEFAULTED,
+            `Transfer to core vault ${requestId} has defaulted for agent ${this.address}.`
         );
     }
 

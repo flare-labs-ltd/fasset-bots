@@ -427,9 +427,9 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
-    it("Should send agent transfer to cv cancelled", async () => {
-        const spySend = spy.on(notifier, "sendTransferToCVCancelled");
-        await notifier.sendTransferToCVCancelled("requestId");
+    it("Should send agent transfer to cv defaulted", async () => {
+        const spySend = spy.on(notifier, "sendTransferToCVDefaulted");
+        await notifier.sendTransferToCVDefaulted("requestId");
         expect(spySend).to.have.been.called.once;
     });
 
