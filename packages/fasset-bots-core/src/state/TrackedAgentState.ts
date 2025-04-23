@@ -115,6 +115,7 @@ export class TrackedAgentState {
         this.agentSettings.vaultCollateralToken = agentInfo.vaultCollateralToken;
         this.agentSettings.feeBIPS = toBN(agentInfo.feeBIPS);
         this.agentSettings.poolFeeShareBIPS = toBN(agentInfo.poolFeeShareBIPS);
+        this.agentSettings.redemptionPoolFeeShareBIPS = toBN(agentInfo.redemptionPoolFeeShareBIPS);
         this.agentSettings.mintingVaultCollateralRatioBIPS = toBN(agentInfo.mintingVaultCollateralRatioBIPS);
         this.agentSettings.mintingPoolCollateralRatioBIPS = toBN(agentInfo.mintingPoolCollateralRatioBIPS);
         this.agentSettings.poolExitCollateralRatioBIPS = toBN(agentInfo.poolExitCollateralRatioBIPS);

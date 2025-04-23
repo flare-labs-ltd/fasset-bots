@@ -24,7 +24,7 @@ export class MockTrackedState extends TrackedState {
     }
 
     override async createAgentWithCurrentState(vaultAddress: string): Promise<MockTrackedAgentState> {
-        const { info: agentInfo } = await this.getAgentInfo(vaultAddress);
+        const { info: agentInfo } = await this.getExtendedAgentInfo(vaultAddress);
         const agent = this.createAgent({
             agentVault: vaultAddress,
             owner: agentInfo.ownerManagementAddress,

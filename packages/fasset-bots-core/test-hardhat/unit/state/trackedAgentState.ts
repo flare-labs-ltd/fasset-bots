@@ -61,7 +61,7 @@ describe("Tracked agent state tests", () => {
         trackedState = new TrackedState(trackedStateContext);
         await trackedState.initialize();
         trackedAgentState = new TrackedAgentState(trackedState, agentCreated);
-        const { info: agentInfo } = await trackedState.getAgentInfo(agentBot.agent.vaultAddress);
+        const { info: agentInfo } = await trackedState.getExtendedAgentInfo(agentBot.agent.vaultAddress);
         trackedAgentState.initialize(agentInfo);
         return { orm, context, trackedStateContext, agentBot, trackedState, trackedAgentState };
     }

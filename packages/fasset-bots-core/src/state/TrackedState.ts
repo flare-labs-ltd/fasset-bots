@@ -349,7 +349,7 @@ export class TrackedState {
     }
 
     async createAgentWithCurrentState(vaultAddress: string): Promise<TrackedAgentState> {
-        const { block, info: agentInfo } = await this.getAgentInfo(vaultAddress);
+        const { block, info: agentInfo } = await this.getExtendedAgentInfo(vaultAddress);
         const agent = this.createAgent({
             agentVault: vaultAddress,
             owner: agentInfo.ownerManagementAddress,
@@ -418,7 +418,7 @@ export class TrackedState {
         return agent;
     }
 
-    async getAgentInfo(vaultAddress: string): Promise<{ info: ExtendedAgentInfo, block: number }> {
+    async getExtendedAgentInfo(vaultAddress: string): Promise<{ info: ExtendedAgentInfo, block: number }> {
         return this.ensureWithinSameBlock(async () => {
             return {
                 ...await this.context.assetManager.getAgentInfo(vaultAddress),
