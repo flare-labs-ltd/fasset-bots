@@ -280,7 +280,7 @@ describe("AgentBot cli commands unit tests", () => {
         await botCliCommands.updateAgentSetting(agent.vaultAddress, settingsName, updateValue1);
         const settingsUpdates = await orm.em.find(AgentUpdateSetting, { agentAddress: agent.vaultAddress, name: settingsName } as FilterQuery<AgentUpdateSetting>, { orderBy: { id: ('ASC') } });
         expect(settingsUpdates[0].state).to.eq(AgentUpdateSettingState.WAITING);
-        time.increaseTo(settingsUpdates[0].validAt);
+        await time.increaseTo(settingsUpdates[0].validAt);
         // run agent's steps until setting is updated
         for (let i = 0; ; i++) {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);

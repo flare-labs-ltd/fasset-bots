@@ -190,7 +190,9 @@ export class AgentBotCommands {
         const agentInfo = await agent.getAgentInfo();
         const price = await agent.getVaultCollateralPrice();
         const mintingCRBips = maxBN(toBN(price.collateral.minCollateralRatioBIPS), toBN(agentInfo.mintingVaultCollateralRatioBIPS));
-        return price.convertUBAToTokenWei(amountUBA).mul(mintingCRBips).muln(Number(multiplier)).addn(MAX_BIPS - 1).divn(MAX_BIPS);
+        const amountPoolFeeUBA = amountUBA.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS).mul(toBN(agentInfo.poolFeeShareBIPS)).divn(MAX_BIPS);
+        const fullAmountWei = price.convertUBAToTokenWei(amountUBA.add(amountPoolFeeUBA));
+        return fullAmountWei.mul(mintingCRBips).muln(Number(multiplier)).addn(MAX_BIPS - 1).divn(MAX_BIPS);
     }
 
     async checkVaultBalance(agentVault: string, depositAmount: BN) {
@@ -208,7 +210,9 @@ export class AgentBotCommands {
         const agentInfo = await agent.getAgentInfo();
         const price = await agent.getPoolCollateralPrice();
         const mintingCRBips = maxBN(toBN(price.collateral.minCollateralRatioBIPS), toBN(agentInfo.mintingPoolCollateralRatioBIPS));
-        return price.convertUBAToTokenWei(amountUBA).mul(mintingCRBips).muln(Number(multiplier)).addn(MAX_BIPS - 1).divn(MAX_BIPS);
+        const amountPoolFeeUBA = amountUBA.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS).mul(toBN(agentInfo.poolFeeShareBIPS)).divn(MAX_BIPS);
+        const fullAmountWei = price.convertUBAToTokenWei(amountUBA.add(amountPoolFeeUBA));
+        return fullAmountWei.mul(mintingCRBips).muln(Number(multiplier)).addn(MAX_BIPS - 1).divn(MAX_BIPS);
     }
 
     async checkPoolBalance(agentVault: string, depositAmount: BN) {
