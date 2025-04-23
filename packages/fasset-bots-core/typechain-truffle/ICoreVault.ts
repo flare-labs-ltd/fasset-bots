@@ -71,8 +71,10 @@ export interface TransferToCoreVaultDefaulted {
   args: {
     agentVault: string;
     transferRedemptionRequestId: BN;
+    remintedUBA: BN;
     0: string;
     1: BN;
+    2: BN;
   };
 }
 

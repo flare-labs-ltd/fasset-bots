@@ -8,6 +8,7 @@ import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
 import { IERC1822ProxiableContract } from "./IERC1822Proxiable";
 import { IERC1967Contract } from "./IERC1967";
+import { IERC5267Contract } from "./IERC5267";
 import { IBeaconContract } from "./IBeacon";
 import { ERC1967ProxyContract } from "./ERC1967Proxy";
 import { ERC1967UpgradeContract } from "./ERC1967Upgrade";
@@ -127,8 +128,13 @@ import { IGovernedContract } from "./IGoverned";
 import { AddressUpdatableMockContract } from "./AddressUpdatableMock";
 import { GovernedMockContract } from "./GovernedMock";
 import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
+import { EIP712DomainMockContract } from "./EIP712DomainMock";
+import { ERC20PermitMockContract } from "./ERC20PermitMock";
+import { ERC20UpgradableTokenMockContract } from "./ERC20UpgradableTokenMock";
 import { ReentrancyAttackMockContract } from "./ReentrancyAttackMock";
 import { ReentrancyMockContract } from "./ReentrancyMock";
+import { ERC20PermitContract } from "./ERC20Permit";
+import { EIP712Contract } from "./EIP712";
 import { IAgentAlwaysAllowedMintersContract } from "./IAgentAlwaysAllowedMinters";
 import { IAgentOwnerRegistryContract } from "./IAgentOwnerRegistry";
 import { IAgentPingContract } from "./IAgentPing";
@@ -216,6 +222,7 @@ export type * from "./types";
       require(name: "MockInterface"): MockInterfaceContract;
       require(name: "IERC1822Proxiable"): IERC1822ProxiableContract;
       require(name: "IERC1967"): IERC1967Contract;
+      require(name: "IERC5267"): IERC5267Contract;
       require(name: "IBeacon"): IBeaconContract;
       require(name: "ERC1967Proxy"): ERC1967ProxyContract;
       require(name: "ERC1967Upgrade"): ERC1967UpgradeContract;
@@ -377,8 +384,15 @@ export type * from "./types";
       require(
         name: "GovernedWithTimelockMock"
       ): GovernedWithTimelockMockContract;
+      require(name: "EIP712DomainMock"): EIP712DomainMockContract;
+      require(name: "ERC20PermitMock"): ERC20PermitMockContract;
+      require(
+        name: "ERC20UpgradableTokenMock"
+      ): ERC20UpgradableTokenMockContract;
       require(name: "ReentrancyAttackMock"): ReentrancyAttackMockContract;
       require(name: "ReentrancyMock"): ReentrancyMockContract;
+      require(name: "ERC20Permit"): ERC20PermitContract;
+      require(name: "EIP712"): EIP712Contract;
       require(
         name: "IAgentAlwaysAllowedMinters"
       ): IAgentAlwaysAllowedMintersContract;
@@ -489,6 +503,7 @@ export {
   IERC1822ProxiableInstance,
 } from "./IERC1822Proxiable";
 export { IERC1967Contract, IERC1967Instance } from "./IERC1967";
+export { IERC5267Contract, IERC5267Instance } from "./IERC5267";
 export { IBeaconContract, IBeaconInstance } from "./IBeacon";
 export { ERC1967ProxyContract, ERC1967ProxyInstance } from "./ERC1967Proxy";
 export {
@@ -861,6 +876,18 @@ export {
   GovernedWithTimelockMockInstance,
 } from "./GovernedWithTimelockMock";
 export {
+  EIP712DomainMockContract,
+  EIP712DomainMockInstance,
+} from "./EIP712DomainMock";
+export {
+  ERC20PermitMockContract,
+  ERC20PermitMockInstance,
+} from "./ERC20PermitMock";
+export {
+  ERC20UpgradableTokenMockContract,
+  ERC20UpgradableTokenMockInstance,
+} from "./ERC20UpgradableTokenMock";
+export {
   ReentrancyAttackMockContract,
   ReentrancyAttackMockInstance,
 } from "./ReentrancyAttackMock";
@@ -868,6 +895,8 @@ export {
   ReentrancyMockContract,
   ReentrancyMockInstance,
 } from "./ReentrancyMock";
+export { ERC20PermitContract, ERC20PermitInstance } from "./ERC20Permit";
+export { EIP712Contract, EIP712Instance } from "./EIP712";
 export {
   IAgentAlwaysAllowedMintersContract,
   IAgentAlwaysAllowedMintersInstance,

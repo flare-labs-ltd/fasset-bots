@@ -36,6 +36,18 @@ export interface CustodianAddressUpdated {
   };
 }
 
+export interface CustomInstructions {
+  name: "CustomInstructions";
+  args: {
+    sequence: BN;
+    account: string;
+    instructionsHash: string;
+    0: BN;
+    1: string;
+    2: string;
+  };
+}
+
 export interface EmergencyPauseSenderAdded {
   name: "EmergencyPauseSenderAdded";
   args: {
@@ -203,6 +215,7 @@ export type AllEvents =
   | AllowedDestinationAddressAdded
   | AllowedDestinationAddressRemoved
   | CustodianAddressUpdated
+  | CustomInstructions
   | EmergencyPauseSenderAdded
   | EmergencyPauseSenderRemoved
   | EscrowFinished

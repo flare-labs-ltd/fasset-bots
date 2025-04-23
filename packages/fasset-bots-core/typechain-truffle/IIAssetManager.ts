@@ -883,8 +883,10 @@ export interface TransferToCoreVaultDefaulted {
   args: {
     agentVault: string;
     transferRedemptionRequestId: BN;
+    remintedUBA: BN;
     0: string;
     1: BN;
+    2: BN;
   };
 }
 
@@ -1563,6 +1565,28 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     _lots: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
+
+  collateralReservationInfo(
+    _collateralReservationId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{
+    collateralReservationId: BN;
+    agentVault: string;
+    minter: string;
+    paymentAddress: string;
+    paymentReference: string;
+    valueUBA: BN;
+    mintingFeeUBA: BN;
+    reservationFeeNatWei: BN;
+    poolFeeShareBIPS: BN;
+    firstUnderlyingBlock: BN;
+    lastUnderlyingBlock: BN;
+    lastUnderlyingTimestamp: BN;
+    executor: string;
+    executorFeeNatWei: BN;
+    handshakeStartTimestamp: BN;
+    sourceAddressesRoot: string;
+  }>;
 
   confirmRedemptionPayment: {
     (
@@ -4018,6 +4042,31 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     1: BN;
   }>;
 
+  redemptionRequestInfo(
+    _redemptionRequestId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{
+    redemptionRequestId: BN;
+    status: BN;
+    agentVault: string;
+    redeemer: string;
+    paymentAddress: string;
+    paymentReference: string;
+    valueUBA: BN;
+    feeUBA: BN;
+    poolFeeShareBIPS: BN;
+    firstUnderlyingBlock: BN;
+    lastUnderlyingBlock: BN;
+    lastUnderlyingTimestamp: BN;
+    timestamp: BN;
+    poolSelfClose: boolean;
+    transferToCoreVault: boolean;
+    executor: string;
+    executorFeeNatWei: BN;
+    rejectionTimestamp: BN;
+    takeOverTimestamp: BN;
+  }>;
+
   rejectCollateralReservation: {
     (
       _collateralReservationId: number | BN | string,
@@ -6416,6 +6465,28 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _lots: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    collateralReservationInfo(
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{
+      collateralReservationId: BN;
+      agentVault: string;
+      minter: string;
+      paymentAddress: string;
+      paymentReference: string;
+      valueUBA: BN;
+      mintingFeeUBA: BN;
+      reservationFeeNatWei: BN;
+      poolFeeShareBIPS: BN;
+      firstUnderlyingBlock: BN;
+      lastUnderlyingBlock: BN;
+      lastUnderlyingTimestamp: BN;
+      executor: string;
+      executorFeeNatWei: BN;
+      handshakeStartTimestamp: BN;
+      sourceAddressesRoot: string;
+    }>;
 
     confirmRedemptionPayment: {
       (
@@ -8875,6 +8946,31 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<{
       0: { redemptionTicketId: BN; agentVault: string; ticketValueUBA: BN }[];
       1: BN;
+    }>;
+
+    redemptionRequestInfo(
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{
+      redemptionRequestId: BN;
+      status: BN;
+      agentVault: string;
+      redeemer: string;
+      paymentAddress: string;
+      paymentReference: string;
+      valueUBA: BN;
+      feeUBA: BN;
+      poolFeeShareBIPS: BN;
+      firstUnderlyingBlock: BN;
+      lastUnderlyingBlock: BN;
+      lastUnderlyingTimestamp: BN;
+      timestamp: BN;
+      poolSelfClose: boolean;
+      transferToCoreVault: boolean;
+      executor: string;
+      executorFeeNatWei: BN;
+      rejectionTimestamp: BN;
+      takeOverTimestamp: BN;
     }>;
 
     rejectCollateralReservation: {

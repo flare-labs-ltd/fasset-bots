@@ -49,6 +49,11 @@ export interface CreatedTotalSupplyCache {
   };
 }
 
+export interface EIP712DomainChanged {
+  name: "EIP712DomainChanged";
+  args: {};
+}
+
 export interface Transfer {
   name: "Transfer";
   args: {
@@ -74,10 +79,13 @@ export type AllEvents =
   | Approval
   | BeaconUpgraded
   | CreatedTotalSupplyCache
+  | EIP712DomainChanged
   | Transfer
   | Upgraded;
 
 export interface FAssetInstance extends Truffle.ContractInstance {
+  DOMAIN_SEPARATOR(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   allowance(
     owner: string,
     spender: string,
@@ -203,6 +211,18 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  eip712Domain(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{
+    0: string;
+    1: string;
+    2: string;
+    3: BN;
+    4: string;
+    5: string;
+    6: BN[];
+  }>;
+
   getReceivedAmount(
     arg0: string,
     arg1: string,
@@ -277,6 +297,15 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  initializeV1r1: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   mint: {
     (
       _owner: string,
@@ -301,6 +330,51 @@ export interface FAssetInstance extends Truffle.ContractInstance {
   };
 
   name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  nonces(owner: string, txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  permit: {
+    (
+      owner: string,
+      spender: string,
+      value: number | BN | string,
+      deadline: number | BN | string,
+      v: number | BN | string,
+      r: string,
+      s: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      owner: string,
+      spender: string,
+      value: number | BN | string,
+      deadline: number | BN | string,
+      v: number | BN | string,
+      r: string,
+      s: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      owner: string,
+      spender: string,
+      value: number | BN | string,
+      deadline: number | BN | string,
+      v: number | BN | string,
+      r: string,
+      s: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      owner: string,
+      spender: string,
+      value: number | BN | string,
+      deadline: number | BN | string,
+      v: number | BN | string,
+      r: string,
+      s: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
 
   proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -590,6 +664,8 @@ export interface FAssetInstance extends Truffle.ContractInstance {
   };
 
   methods: {
+    DOMAIN_SEPARATOR(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     allowance(
       owner: string,
       spender: string,
@@ -715,6 +791,18 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    eip712Domain(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{
+      0: string;
+      1: string;
+      2: string;
+      3: BN;
+      4: string;
+      5: string;
+      6: BN[];
+    }>;
+
     getReceivedAmount(
       arg0: string,
       arg1: string,
@@ -789,6 +877,15 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    initializeV1r1: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
     mint: {
       (
         _owner: string,
@@ -813,6 +910,51 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     };
 
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    nonces(owner: string, txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    permit: {
+      (
+        owner: string,
+        spender: string,
+        value: number | BN | string,
+        deadline: number | BN | string,
+        v: number | BN | string,
+        r: string,
+        s: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        owner: string,
+        spender: string,
+        value: number | BN | string,
+        deadline: number | BN | string,
+        v: number | BN | string,
+        r: string,
+        s: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        owner: string,
+        spender: string,
+        value: number | BN | string,
+        deadline: number | BN | string,
+        v: number | BN | string,
+        r: string,
+        s: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        owner: string,
+        spender: string,
+        value: number | BN | string,
+        deadline: number | BN | string,
+        v: number | BN | string,
+        r: string,
+        s: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 

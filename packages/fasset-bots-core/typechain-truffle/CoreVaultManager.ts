@@ -54,6 +54,18 @@ export interface CustodianAddressUpdated {
   };
 }
 
+export interface CustomInstructions {
+  name: "CustomInstructions";
+  args: {
+    sequence: BN;
+    account: string;
+    instructionsHash: string;
+    0: BN;
+    1: string;
+    2: string;
+  };
+}
+
 export interface EmergencyPauseSenderAdded {
   name: "EmergencyPauseSenderAdded";
   args: {
@@ -275,6 +287,7 @@ export type AllEvents =
   | AllowedDestinationAddressRemoved
   | BeaconUpgraded
   | CustodianAddressUpdated
+  | CustomInstructions
   | EmergencyPauseSenderAdded
   | EmergencyPauseSenderRemoved
   | EscrowFinished
@@ -920,6 +933,25 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
   totalRequestAmountWithFee(
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
+
+  triggerCustomInstructions: {
+    (
+      _instructionsHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _instructionsHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _instructionsHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _instructionsHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
 
   triggerInstructions: {
     (txDetails?: Truffle.TransactionDetails): Promise<
@@ -1678,6 +1710,25 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
     totalRequestAmountWithFee(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    triggerCustomInstructions: {
+      (
+        _instructionsHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _instructionsHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _instructionsHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _instructionsHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     triggerInstructions: {
       (txDetails?: Truffle.TransactionDetails): Promise<
