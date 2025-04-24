@@ -110,7 +110,9 @@ export enum AgentNotificationKey {
     TRANSFER_TO_CV_PERFORMED = "TRANSFER TO CORE VAULT PERFORMED",
     TRANSFER_TO_CV_REDEMPTION = "CORE VAULT REDEMPTION",
     RETURN_FROM_CV_STARTED = "RETURN FROM CORE VAULT STARTED",
+    RETURN_FROM_CV_TRIGGER = "RETURN FROM CORE VAULT TRIGGER",
     RETURN_FROM_CV_CANCELLED = "RETURN FROM CORE VAULT CANCELLED",
+    RETURN_FROM_CV_CANCELLED_TRIGGER = "RETURN FROM CORE VAULT CANCELLED TRIGGER",
     RETURN_FROM_CV_PERFORMED = "RETURN FROM CORE VAULT PERFORMED",
     RETURN_FROM_CV_PAYMENT_PROOF = "RETURN FROM CORE VAULT PAYMENT PROOF REQUESTED",
     RETURN_FROM_CVN_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR RETURN FROM CORE VAULT",
@@ -645,11 +647,19 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.RETURN_FROM_CV_STARTED, `Return from core vault ${requestId} started for ${this.address}.`);
     }
 
+    async sendReturnFromCVTrigger(requestId: string) {
+        await this.info(AgentNotificationKey.RETURN_FROM_CV_TRIGGER, `Return from core vault ${requestId} was triggered for ${this.address}.`);
+    }
+
     async sendReturnFromCVCancelled(requestId: string) {
         await this.info(
             AgentNotificationKey.RETURN_FROM_CV_CANCELLED,
             `Return from core vault ${requestId} was cancelled for agent ${this.address}.`
         );
+    }
+
+    async sendReturnFromCVCancelledTrigger(requestId: string) {
+        await this.info(AgentNotificationKey.RETURN_FROM_CV_CANCELLED_TRIGGER, `Cancellation for return from core vault ${requestId} was triggered for ${this.address}.`);
     }
 
     async sendReturnFromCVPerformed(requestId: string) {

@@ -481,6 +481,18 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
+    it("Should send agent return from cv triggered", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVTrigger");
+        await notifier.sendReturnFromCVTrigger("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent cancellation of return from cv triggered", async () => {
+        const spySend = spy.on(notifier, "sendReturnFromCVCancelledTrigger");
+        await notifier.sendReturnFromCVCancelledTrigger("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
     const testNotifierThrottlingTimes: NotifierThrottlingConfigs = {
         [AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE]: { duration: 6 * HOURS, addressInKey: false },
         [AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE]: { duration: 6 * HOURS, addressInKey: true },
