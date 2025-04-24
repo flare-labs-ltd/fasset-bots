@@ -224,6 +224,10 @@ export class TrackedState {
         } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
             logger.info(`Tracked State received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
             (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionPerformed(event.args);
+        } else if (eventIs(event, this.context.assetManager, "RedemptionPoolFeeMinted")) {
+            logger.info(`Tracked State received event 'RedemptionPoolFeeMinted' with data ${formatArgs(event.args)}.`);
+            this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.poolFeeUBA));
+            (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionPoolFeeMinted(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionDefault")) {
             logger.info(`Tracked State received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
             (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleRedemptionDefault(event.args);
@@ -262,6 +266,7 @@ export class TrackedState {
             (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleReturnFromCoreVaultConfirmed(event.args);
         } else if (eventIs(event, this.context.assetManager, "TransferToCoreVaultDefaulted")) {
             logger.info(`Tracked State received event 'TransferToCoreVaultDefaulted' with data ${formatArgs(event.args)}.`);
+            this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.remintedUBA));
             (await this.getAgentTriggerAddIfUpdatable(event.args.agentVault, event.blockNumber))?.handleTransferToCoreVaultDefaulted(event.args);
         }
         for (const collateral of this.collaterals.list) {

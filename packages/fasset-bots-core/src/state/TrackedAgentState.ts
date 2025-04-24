@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { AgentAvailable, AgentCollateralTypeChanged, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
-import { AgentVaultCreated, CollateralReservationDeleted, RedeemedInCollateral, ReturnFromCoreVaultConfirmed, ReturnFromCoreVaultRequested, SelfMint, TransferToCoreVaultDefaulted } from "../../typechain-truffle/IIAssetManager";
+import { AgentVaultCreated, CollateralReservationDeleted, RedeemedInCollateral, RedemptionPoolFeeMinted, ReturnFromCoreVaultConfirmed, ReturnFromCoreVaultRequested, SelfMint, TransferToCoreVaultDefaulted } from "../../typechain-truffle/IIAssetManager";
 import { AgentInfo, AgentStatus, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { roundUBAToAmg } from "../fasset/Conversions";
 import { EventArgs } from "../utils/events/common";
@@ -227,6 +227,11 @@ export class TrackedAgentState {
         this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
         logger.info(`Tracked State Agent handled redemption performed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
+    }
+
+    handleRedemptionPoolFeeMinted(args: EventArgs<RedemptionPoolFeeMinted>): void {
+        this.mintedUBA = this.mintedUBA.add(toBN(args.poolFeeUBA));
+        logger.info(`Tracked State Agent handled redemption pool fee minted: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleRedemptionPaymentFailed(args: EventArgs<RedemptionPaymentFailed>): void {
