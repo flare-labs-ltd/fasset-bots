@@ -592,6 +592,18 @@ export interface RedemptionPerformed {
   };
 }
 
+export interface RedemptionPoolFeeMinted {
+  name: "RedemptionPoolFeeMinted";
+  args: {
+    agentVault: string;
+    requestId: BN;
+    poolFeeUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface RedemptionRejected {
   name: "RedemptionRejected";
   args: {
@@ -911,6 +923,7 @@ export type AllEvents =
   | RedemptionPaymentBlocked
   | RedemptionPaymentFailed
   | RedemptionPerformed
+  | RedemptionPoolFeeMinted
   | RedemptionRejected
   | RedemptionRequestIncomplete
   | RedemptionRequestRejected

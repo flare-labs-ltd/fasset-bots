@@ -1260,6 +1260,31 @@
         },
         {
           "indexed": true,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolFeeUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "RedemptionPoolFeeMinted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
           "internalType": "address",
           "name": "redeemer",
           "type": "address"
