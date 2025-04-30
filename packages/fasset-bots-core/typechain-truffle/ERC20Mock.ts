@@ -42,6 +42,24 @@ export interface Transfer {
 export type AllEvents = Approval | Transfer;
 
 export interface ERC20MockInstance extends Truffle.ContractInstance {
+  addToSanctionList: {
+    (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   allowance(
     owner: string,
     spender: string,
@@ -181,6 +199,11 @@ export interface ERC20MockInstance extends Truffle.ContractInstance {
 
   name(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  sanctionedAddresses(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
@@ -257,6 +280,24 @@ export interface ERC20MockInstance extends Truffle.ContractInstance {
   };
 
   methods: {
+    addToSanctionList: {
+      (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     allowance(
       owner: string,
       spender: string,
@@ -395,6 +436,11 @@ export interface ERC20MockInstance extends Truffle.ContractInstance {
     };
 
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    sanctionedAddresses(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 

@@ -369,6 +369,15 @@ export interface CoreVaultSettingsFacetInstance
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
+  updateInterfacesAtCoreVaultDeploy: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   methods: {
     cancelGovernanceCall: {
       (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -644,6 +653,15 @@ export interface CoreVaultSettingsFacetInstance
     };
 
     switchToProductionMode: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
+    updateInterfacesAtCoreVaultDeploy: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
