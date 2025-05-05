@@ -252,6 +252,13 @@ export class AgentService {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currentSettings: any = await cli.printAgentSettings(agentVaultAddress);
         for (const setting of settings) {
+            if (setting.name == "redemptionPoolFeeShareBIPS") {
+                const bips = await cli.context.assetManager.getAgentSetting(agentVaultAddress, "redemptionPoolFeeShareBIPS");
+                if (!toBN(bips).eq(toBN(setting.value))) {
+                    await cli.updateAgentSetting(agentVaultAddress, setting.name, setting.value);
+                }
+                continue;
+            }
             if(parseInt(currentSettings[setting.name], 10) != parseInt(setting.value, 10)){
                 await cli.updateAgentSetting(agentVaultAddress, setting.name, setting.value);
             }
