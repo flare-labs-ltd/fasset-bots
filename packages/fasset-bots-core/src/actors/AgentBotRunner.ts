@@ -91,7 +91,7 @@ export class AgentBotRunner {
     }
 
     requestRestart(): void {
-        logger.warn(`Main agent bot runner requested restart.`);
+        logger.warn(`Agent bot runner requested restart.`);
         this.restartRequested = true;
     }
 
