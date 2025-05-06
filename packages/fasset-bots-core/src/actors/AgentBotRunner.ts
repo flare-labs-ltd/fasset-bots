@@ -68,7 +68,7 @@ export class AgentBotRunner {
         } finally {
             this.running = false;
             await this.stopAllWalletMonitoring();
-            logger.info(`Main agent bot runner loop ended.`)
+            logger.info(`Main agent bot runner loop ended.`);
         }
     }
 
@@ -77,7 +77,7 @@ export class AgentBotRunner {
         return firstValue(this.settings)?.parallel ?? false;
     }
 
-    readyToStop() {
+    readyToStop(): boolean {
         return this.stopOrRestartRequested() && this.runningAgentBots.size === 0;
     }
 
@@ -86,10 +86,12 @@ export class AgentBotRunner {
     }
 
     requestStop(): void {
+        logger.warn(`Agent bot runner requested stop.`);
         this.stopRequested = true;
     }
 
     requestRestart(): void {
+        logger.warn(`Main agent bot runner requested restart.`);
         this.restartRequested = true;
     }
 

@@ -286,6 +286,7 @@ export class AgentBot {
     }
 
     requestStop(): void {
+        logger.warn(`Stop was requested for agent ${this.agent.vaultAddress}.`);
         this._stopRequested = true;
     }
 
