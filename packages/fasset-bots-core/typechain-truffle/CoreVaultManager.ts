@@ -957,7 +957,7 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    call(txDetails?: Truffle.TransactionDetails): Promise<BN>;
     sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
@@ -1734,7 +1734,7 @@ export interface CoreVaultManagerInstance extends Truffle.ContractInstance {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      call(txDetails?: Truffle.TransactionDetails): Promise<BN>;
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };

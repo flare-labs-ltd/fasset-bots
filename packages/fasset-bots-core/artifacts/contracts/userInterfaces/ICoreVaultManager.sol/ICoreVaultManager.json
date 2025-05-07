@@ -994,7 +994,13 @@
     {
       "inputs": [],
       "name": "triggerInstructions",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_numberOfInstructions",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     }
