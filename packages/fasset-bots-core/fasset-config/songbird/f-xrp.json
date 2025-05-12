@@ -33,8 +33,8 @@
         }
     ],
     "minUnderlyingBackingBIPS": 9800,
-    "mintingCap": "100 000 000000",
-    "lotSize": "100 000000",
+    "mintingCap": "750 000 000000",
+    "lotSize": "10 000000",
     "requireEOAAddressProof": false,
     "collateralReservationFeeBIPS": 50,
     "mintingPoolHoldingsRequiredBIPS": 5000,
@@ -88,5 +88,11 @@
     "transferFeeMillionths": 0,
     "transferFeeClaimFirstEpochStartTs": 1733122800,
     "transferFeeClaimEpochDurationSeconds": 302400,
-    "transferFeeClaimMaxUnexpiredEpochs": 30
+    "transferFeeClaimMaxUnexpiredEpochs": 30,
+    "coreVaultNativeAddress": "0x000000000000000000000000000000000000dEaD",
+    "coreVaultTransferFeeBIPS": 0,
+    "coreVaultTransferTimeExtensionSeconds": 900,
+    "coreVaultMinimumAmountLeftBIPS": 1500,
+    "coreVaultRedemptionFeeBIPS": 0,
+    "coreVaultMinimumRedeemLots": 1000
 }
