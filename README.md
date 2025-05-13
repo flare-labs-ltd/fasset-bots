@@ -1,5 +1,12 @@
 # FAsset bots
 
+## Repository Transferred
+
+The development of FAsset protocol was commissioned for and on behalf of the Flare Foundation, accordingly all completed repos for the protocol have been moved to [Flare Foundation Github](https://github.com/flare-foundation), the protocol's ultimate owner.
+[New repository](https://github.com/flare-foundation/fasset-bots)
+
+## FAsset bots
+
 The [FAsset system](https://docs.flare.network/tech/fassets/) is a protocol that bridges assets from non-smart contract chains to Flare/Songbird. It includes bots that automate actions for various roles (agent, challenger, liquidator) in response to events that need quick reactions, such as collateral reservation, minting, redemption, low collateral ratio, and price changes.
 
 ## Actors in FAsset system
